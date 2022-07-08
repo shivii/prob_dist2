@@ -18,11 +18,32 @@ See options/base_options.py and options/train_options.py for more training optio
 See training and test tips at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/tips.md
 See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/qa.md
 """
+import torch
 import time
 from options.train_options import TrainOptions
 from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
+import numpy as np
+
+##############TSNE changes
+from models import cycle_tsne
+from models import vgg_ft
+
+def compute_tsne(tsne_embeddings, labels, epoch, a_or_b):
+    tsne_ft= np.array(tsne_embeddings)
+    print("tsne ft:", tsne_ft.shape)
+        
+    tsne_data = cycle_tsne.get_tsne(tsne_ft, labels)
+    tsne_data = cycle_tsne.scale_to_01_range(tsne_data)
+    
+    tx = tsne_data[:,0]
+    ty = tsne_data[:,1]
+    
+    cycle_tsne.plot_representations(tx, ty, labels, epoch, a_or_b)
+
+    distance = cycle_tsne.tsne_loss(tx, ty)
+    return distance
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
@@ -34,6 +55,11 @@ if __name__ == '__main__':
     model.setup(opt)               # regular setup: load and print networks; create schedulers
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     total_iters = 0                # the total number of training iterations
+    
+    print("------------device", opt.gpu_ids)
+    vgg_ft = vgg_ft.VGGLoss()
+    distanceA = 0
+    distanceB = 0
 
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
@@ -41,6 +67,22 @@ if __name__ == '__main__':
         epoch_iter = 0                  # the number of training iterations in current epoch, reset to 0 every epoch
         visualizer.reset()              # reset the visualizer: make sure it saves the results to HTML at least once every epoch
         model.update_learning_rate()    # update learning rates in the beginning of every epoch.
+        
+        ##########TSNE changes
+        
+        tsne_ftA = torch.zeros((0, 4096), dtype=torch.float32)
+        tsne_embeddingsA = torch.zeros((0, 4096), dtype=torch.float32)
+        imagesA = torch.zeros((0, 65536), dtype=torch.float32)
+        labels_A = torch.zeros((0,1), dtype=torch.uint8)
+        tsne_ftB = torch.zeros((0, 4096), dtype=torch.float32)
+        tsne_embeddingsB = torch.zeros((0, 4096), dtype=torch.float32)
+        imagesB = torch.zeros((0, 65536), dtype=torch.float32)
+        labels_B = torch.zeros((0,1), dtype=torch.uint8)
+        
+        
+        ###################
+        
+        
         for i, data in enumerate(dataset):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
@@ -49,7 +91,8 @@ if __name__ == '__main__':
             total_iters += opt.batch_size
             epoch_iter += opt.batch_size
             model.set_input(data)         # unpack data from dataset and apply preprocessing
-            model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
+            tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B = model.optimize_parameters(vgg_ft, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB)   # calculate loss functions, get gradients, update network weights
+            
 
             if total_iters % opt.display_freq == 0:   # display images on visdom and save images to a HTML file
                 save_result = total_iters % opt.update_html_freq == 0
@@ -69,6 +112,10 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+            
+        distanceA = compute_tsne(tsne_embeddingsA, labels_A, i, "A")
+        distanceB = compute_tsne(tsne_embeddingsB, labels_B, i, "B")
+        
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')

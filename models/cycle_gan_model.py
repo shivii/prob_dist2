@@ -5,6 +5,13 @@ from .base_model import BaseModel
 from . import networks
 
 
+##############TSNE changes
+
+
+
+
+
+
 class CycleGANModel(BaseModel):
     """
     This class implements the CycleGAN model, for learning image-to-image translation without paired data.
@@ -52,7 +59,12 @@ class CycleGANModel(BaseModel):
         """
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
+        ############TSNE changes
+        self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B', 'tsne_A', 'tsne_B']
+        
+        self.real = torch.tensor([[1],])
+        self.fake = torch.tensor([[0],])
+        
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         visual_names_A = ['real_A', 'fake_B', 'rec_A']
         visual_names_B = ['real_B', 'fake_A', 'rec_B']
@@ -95,6 +107,8 @@ class CycleGANModel(BaseModel):
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
+            
+            
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -115,6 +129,7 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
+        
 
     def backward_D_basic(self, netD, real, fake):
         """Calculate GAN loss for the discriminator
@@ -148,7 +163,7 @@ class CycleGANModel(BaseModel):
         fake_A = self.fake_A_pool.query(self.fake_A)
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
 
-    def backward_G(self):
+    def backward_G(self, vgg_ft, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB):
         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
         lambda_A = self.opt.lambda_A
@@ -164,6 +179,32 @@ class CycleGANModel(BaseModel):
         else:
             self.loss_idt_A = 0
             self.loss_idt_B = 0
+            
+        ##########TSNE changes
+        # get features and embedding from VGG19---------------------------------------- ###
+            
+        featA = vgg_ft(self.real_A)
+        featB = vgg_ft(self.real_B)
+        featCycleA = vgg_ft(self.rec_A)
+        featCycleB = vgg_ft(self.rec_B)
+        
+        # tsne for B, Cycle B
+        # tsne for A, Cycle A    
+        
+        tsne_embeddingsA = torch.cat((tsne_embeddingsA, featA.detach().cpu()), 0)
+        labels_A = torch.cat((labels_A, self.real),0)
+        tsne_embeddingsA = torch.cat((tsne_embeddingsA, featCycleA.detach().cpu()), 0)
+        labels_A = torch.cat((labels_A, self.fake),0)
+        
+        tsne_embeddingsB = torch.cat((tsne_embeddingsB, featB.detach().cpu()), 0)
+        labels_B = torch.cat((labels_B, self.real),0)
+        tsne_embeddingsB = torch.cat((tsne_embeddingsB, featCycleB.detach().cpu()), 0)
+        labels_B = torch.cat((labels_B, self.fake),0)
+        
+        #print("A vgg features shape:", tsne_embeddingsA.shape)
+        #print("B vgg features shape:", tsne_embeddingsB.shape)
+        #print("A vgg labels shape:", labels_A.shape)
+        #print("B vgg labels shape:", labels_B.shape)
 
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
@@ -173,18 +214,26 @@ class CycleGANModel(BaseModel):
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
         # Backward cycle loss || G_A(G_B(B)) - B||
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+        
+        # TSNE loss
+        self.loss_tsne_A = distanceA
+        self.loss_tsne_B = distanceB
+        
         # combined loss and calculate gradients
-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B
+        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_tsne_A + self.loss_tsne_B
+        
         self.loss_G.backward()
+        
+        return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B
 
-    def optimize_parameters(self):
+    def optimize_parameters(self, vgg_ft, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         self.forward()      # compute fake images and reconstruction images.
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        self.backward_G()             # calculate gradients for G_A and G_B
+        tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B = self.backward_G(vgg_ft, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB)             # calculate gradients for G_A and G_B
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
@@ -192,3 +241,5 @@ class CycleGANModel(BaseModel):
         self.backward_D_A()      # calculate gradients for D_A
         self.backward_D_B()      # calculate graidents for D_B
         self.optimizer_D.step()  # update D_A and D_B's weights
+        
+        return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B
