@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from sklearn.manifold import TSNE
+#from sklearn.manifold import TSNE
+from tsnecuda import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 from math import sqrt
@@ -8,8 +9,9 @@ from statistics import mean
 
 def get_tsne(data, labels):  
     n_components = 2
-    tsne = TSNE(n_components = n_components, random_state = 0)
-    tsne_data = tsne.fit_transform(data)
+    #tsne = TSNE(n_components = n_components, random_state = 0)
+    #tsne_data = tsne.fit_transform(data)
+    tsne_data = TSNE(n_components=2, perplexity=15, learning_rate=10).fit_transform(X)
     return tsne_data
     
 def plot_representations(tx, ty, labels, name):
