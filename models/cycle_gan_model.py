@@ -3,7 +3,9 @@ import itertools
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
-
+from . import get_neigh
+import numpy as np
+from models import cycle_tsne
 
 ##############TSNE changes
 
@@ -64,6 +66,10 @@ class CycleGANModel(BaseModel):
         
         self.real = torch.tensor([[1],])
         self.fake = torch.tensor([[0],])
+        # initialize various vectors    
+        self.tsne_embeddingsA = torch.zeros((0, 6), dtype=torch.float32)
+                
+        self.tsne_embeddingsB = torch.zeros((0, 6), dtype=torch.float32)
         
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         visual_names_A = ['real_A', 'fake_B', 'rec_A']
@@ -162,8 +168,24 @@ class CycleGANModel(BaseModel):
         """Calculate GAN loss for discriminator D_B"""
         fake_A = self.fake_A_pool.query(self.fake_A)
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
+        
+        
+    def compute_tsne(self, tsne_embeddings, labels, epoch, a_or_b):
+        tsne_ft= np.array(tsne_embeddings)
+        print("tsne ft:", tsne_ft.shape)
+            
+        tsne_data = cycle_tsne.get_tsne(tsne_ft, labels)
+        tsne_data = cycle_tsne.scale_to_01_range(tsne_data)
+        
+        tx = tsne_data[:,0]
+        ty = tsne_data[:,1]
+        
+        cycle_tsne.plot_representations(tx, ty, labels, epoch, a_or_b)
 
-    def backward_G(self, vgg_ft, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB):
+        distance = cycle_tsne.tsne_loss(tx, ty)
+        return distance
+
+    def backward_G(self):
         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
         lambda_A = self.opt.lambda_A
@@ -183,28 +205,19 @@ class CycleGANModel(BaseModel):
         ##########TSNE changes
         # get features and embedding from VGG19---------------------------------------- ###
             
-        featA = vgg_ft(self.real_A)
-        featB = vgg_ft(self.real_B)
-        featCycleA = vgg_ft(self.rec_A)
-        featCycleB = vgg_ft(self.rec_B)
+        featA, lblA = get_neigh.get_neighb_list(self.real_A, self.real)
+        featB, lblB = get_neigh.get_neighb_list(self.real_B, self.real)
+        featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
+        featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
         
-        # tsne for B, Cycle B
-        # tsne for A, Cycle A    
-        
-        tsne_embeddingsA = torch.cat((tsne_embeddingsA, featA.detach().cpu()), 0)
-        labels_A = torch.cat((labels_A, self.real),0)
-        tsne_embeddingsA = torch.cat((tsne_embeddingsA, featCycleA.detach().cpu()), 0)
-        labels_A = torch.cat((labels_A, self.fake),0)
-        
-        tsne_embeddingsB = torch.cat((tsne_embeddingsB, featB.detach().cpu()), 0)
-        labels_B = torch.cat((labels_B, self.real),0)
-        tsne_embeddingsB = torch.cat((tsne_embeddingsB, featCycleB.detach().cpu()), 0)
-        labels_B = torch.cat((labels_B, self.fake),0)
-        
-        #print("A vgg features shape:", tsne_embeddingsA.shape)
-        #print("B vgg features shape:", tsne_embeddingsB.shape)
-        #print("A vgg labels shape:", labels_A.shape)
-        #print("B vgg labels shape:", labels_B.shape)
+        tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
+        tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
+        labels_A = torch.cat((lblA, lblCycleA), 0)
+        labels_B = torch.cat((lblB, lblCycleB), 0)
+
+        print("Features shape:", featA, featB, featCycleA, featCycleB)
+        print("embedings shape:", tsne_embeddingsA, tsne_embeddingsB)
+        print("labels shape:", lblA, lblB, lblCycleA, lblCycleB)
 
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
@@ -216,8 +229,8 @@ class CycleGANModel(BaseModel):
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
         
         # TSNE loss
-        self.loss_tsne_A = distanceA
-        self.loss_tsne_B = distanceB
+        self.loss_tsne_A = self.compute_tsne(tsne_embeddingsA, labels_A, "A")
+        self.loss_tsne_B = self.compute_tsne(tsne_embeddingsB, labels_B, "B")
         
         # combined loss and calculate gradients
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_tsne_A + self.loss_tsne_B
@@ -226,14 +239,14 @@ class CycleGANModel(BaseModel):
         
         return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B
 
-    def optimize_parameters(self, vgg_ft, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB):
+    def optimize_parameters(self, tsne_embeddingsA, tsne_embeddingsB):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         self.forward()      # compute fake images and reconstruction images.
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B = self.backward_G(vgg_ft, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB)             # calculate gradients for G_A and G_B
+        self.backward_G()             # calculate gradients for G_A and G_B
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
@@ -241,5 +254,3 @@ class CycleGANModel(BaseModel):
         self.backward_D_A()      # calculate gradients for D_A
         self.backward_D_B()      # calculate graidents for D_B
         self.optimizer_D.step()  # update D_A and D_B's weights
-        
-        return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B

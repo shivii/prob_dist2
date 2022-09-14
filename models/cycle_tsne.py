@@ -12,7 +12,7 @@ def get_tsne(data, labels):
     tsne_data = tsne.fit_transform(data)
     return tsne_data
     
-def plot_representations(tx, ty, labels, i, name):
+def plot_representations(tx, ty, labels, name):
     classes = [1,0]
     # initialize a matplotlib plot
         
@@ -37,7 +37,7 @@ def plot_representations(tx, ty, labels, i, name):
     
     # build a legend using the labels we set previously
     ax.legend(loc='best')
-    plot_name = "projection_" + str(i) + name
+    plot_name = "projection_" + name
     plt.savefig(plot_name)    
     # finally, show the plot
     #plt.show()
