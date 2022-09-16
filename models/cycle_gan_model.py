@@ -170,7 +170,7 @@ class CycleGANModel(BaseModel):
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
         
         
-    def compute_tsne(self, tsne_embeddings, labels, epoch, a_or_b):
+    def compute_tsne(self, tsne_embeddings, labels, a_or_b):
         tsne_ft= np.array(tsne_embeddings)
         print("tsne ft:", tsne_ft.shape)
             
@@ -180,7 +180,7 @@ class CycleGANModel(BaseModel):
         tx = tsne_data[:,0]
         ty = tsne_data[:,1]
         
-        cycle_tsne.plot_representations(tx, ty, labels, epoch, a_or_b)
+        cycle_tsne.plot_representations(tx, ty, labels, a_or_b)
 
         distance = cycle_tsne.tsne_loss(tx, ty)
         return distance
