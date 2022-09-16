@@ -239,7 +239,7 @@ class CycleGANModel(BaseModel):
         
         return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B
 
-    def optimize_parameters(self, tsne_embeddingsA, tsne_embeddingsB):
+    def optimize_parameters(self):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         self.forward()      # compute fake images and reconstruction images.
