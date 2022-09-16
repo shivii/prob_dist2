@@ -215,9 +215,9 @@ class CycleGANModel(BaseModel):
         labels_A = torch.cat((lblA, lblCycleA), 0)
         labels_B = torch.cat((lblB, lblCycleB), 0)
 
-        print("Features shape:", featA, featB, featCycleA, featCycleB)
-        print("embedings shape:", tsne_embeddingsA, tsne_embeddingsB)
-        print("labels shape:", lblA, lblB, lblCycleA, lblCycleB)
+        print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
+        print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
+        print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
 
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
