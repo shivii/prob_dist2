@@ -11,6 +11,7 @@ def get_tsne(data, labels):
     n_components = 2
     #tsne = TSNE(n_components = n_components, random_state = 0)
     #tsne_data = tsne.fit_transform(data)
+    print("computing TSNE")
     tsne_data = TSNE(n_components=2, perplexity=15, learning_rate=10).fit_transform(data)
     return tsne_data
     
