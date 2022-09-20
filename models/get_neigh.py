@@ -10,7 +10,7 @@ def get_neighb_list(image, label):
     shape_i, shape_j, shape_k  = image.shape
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    
+    label = label.to(device)
     features = torch.zeros((0,6), dtype=torch.float32).to(device)
     labels = torch.zeros((0,1), dtype=torch.float32).to(device)
     for i, x in enumerate(image):
