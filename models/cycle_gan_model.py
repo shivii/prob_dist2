@@ -185,7 +185,7 @@ class CycleGANModel(BaseModel):
         distance = cycle_tsne.tsne_loss(tx, ty)
         return distance
     
-    def get_neighb_list(image, label):
+    def get_neighb_list(self, image, label):
         print("----------------------getting neighbours list-------------------------")
         image = torch.squeeze(image)
         print("image:", image.shape)
