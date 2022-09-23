@@ -6,7 +6,7 @@ from . import networks
 from . import get_neigh
 import numpy as np
 from models import cycle_tsne
-
+import torch.nn as nn
 ##############TSNE changes
 
 
