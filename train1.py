@@ -25,7 +25,7 @@ from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
 import numpy as np
-
+import torch.nn as nn
 ##############TSNE changes
 
 
