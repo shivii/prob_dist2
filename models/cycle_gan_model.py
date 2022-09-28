@@ -6,7 +6,7 @@ from . import networks
 from . import get_neigh
 import numpy as np
 from models import cycle_tsne
-
+import time
 ##############TSNE changes
 
 
@@ -204,17 +204,20 @@ class CycleGANModel(BaseModel):
             
         ##########TSNE changes
         # get features and embedding from VGG19---------------------------------------- ###
-            
+        
+        start = time.time()
         featA, lblA = get_neigh.get_neighb_list(self.real_A, self.real)
         featB, lblB = get_neigh.get_neighb_list(self.real_B, self.real)
         featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
         featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
-        
+        end = time.time()
+
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
         tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
         labels_A = torch.cat((lblA, lblCycleA), 0)
         labels_B = torch.cat((lblB, lblCycleB), 0)
-
+        
+        print("time:", (end-start))
         print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
         print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
         print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
