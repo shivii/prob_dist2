@@ -213,10 +213,10 @@ class CycleGANModel(BaseModel):
         featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
         featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
         """
-        featA, lblA = get_nb_mt.get_neighb_list(self.real_A, self.real)
-        featB, lblB = get_nb_mt.get_neighb_list(self.real_B, self.real)
-        featCycleA, lblCycleA = get_nb_mt.get_neighb_list(self.fake_A, self.fake)
-        featCycleB, lblCycleB = get_nb_mt.get_neighb_list(self.fake_B, self.fake)
+        featA, lblA = get_nb_mt.neigh_mt(self.real_A, self.real)
+        featB, lblB = get_nb_mt.neigh_mt(self.real_B, self.real)
+        featCycleA, lblCycleA = get_nb_mt.neigh_mt(self.fake_A, self.fake)
+        featCycleB, lblCycleB = get_nb_mt.neigh_mt(self.fake_B, self.fake)
         end = time.time()
 
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
