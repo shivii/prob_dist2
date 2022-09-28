@@ -6,21 +6,6 @@
 import torch
 from threading import Thread
 
-
-class ThreadWithReturnValue(Thread):
-    def __init__(self, group=None, target=None, name=None,
-                 args=(), kwargs={}, Verbose=None):
-        Thread.__init__(self, group, target, name, args, kwargs)
-        self._return = None
-    def run(self):
-        print(type(self._target))
-        if self._target is not None:
-            self._return = self._target(*self._args,
-                                                **self._kwargs)
-    def join(self, *args):
-        Thread.join(self, *args)
-        return self._return
-
 def get_neighb_list(image, label, slice_no):
     print("----------------------getting neighbours list-------------------------")
     
@@ -110,7 +95,18 @@ def get_neighb_list(image, label, slice_no):
     print("returning list")
     return features, labels
 
-
+class ThreadWithReturnValue(Thread):
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs={}, Verbose=None):
+        Thread.__init__(self, group, target, name, args, kwargs, Verbose)
+        self._return = None
+    def run(self):
+        if self._Thread__target is not None:
+            self._return = self._Thread__target(*self._Thread__args,
+                                                **self._Thread__kwargs)
+    def join(self):
+        Thread.join(self)
+        return self._return
 
 def neigh_mt(image, label):
     image = torch.squeeze(image)
