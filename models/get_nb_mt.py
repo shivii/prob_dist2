@@ -90,7 +90,7 @@ def get_neighb_list(image, label, slice_no):
                     features = torch.cat((features, feature),0)
                     labels = torch.cat((labels, label), 0)
     
-    #print("features, labels shape :", features.shape, labels.shape)
+    print("features, labels shape :", features.shape, labels.shape)
     
     print("returning list")
     return features, labels
