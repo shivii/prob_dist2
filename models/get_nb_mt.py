@@ -100,12 +100,12 @@ class myThread (Thread):
       Thread.__init__(self)
       self.threadID = threadID
       self.image = image
-      self.labe = label 
+      self.label = label 
       self._return = None
    def run(self):
-      print ("Starting " + self.name)
+      print ("Starting " + self.threadID)
       self._return = get_neighb_list(self.image, self.label, self.slice_no)
-      print ("Exiting " + self.name)
+      print ("Exiting " + self.threadID)
 
    def join(self):
       Thread.join(self)
@@ -120,9 +120,9 @@ def neigh_mt(image, label):
     m3 = image
     
     # creating thread
-    t0 = myThread(1, m1,label, 0)
-    t1 = myThread(2, m2,label, 1)
-    t2 = myThread(3, m3,label, 2)
+    t0 = myThread(1, m1, label, 0)
+    t1 = myThread(2, m2, label, 1)
+    t2 = myThread(3, m3, label, 2)
   
     t0.start()
     t1.start()
