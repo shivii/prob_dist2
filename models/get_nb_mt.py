@@ -97,7 +97,7 @@ def get_neighb_list(image, label, slice_no):
 
 class myThread (Thread):
    def __init__(self, threadID, image, label, slice_no):
-      Thread.__init__(self)
+      Thread.__init__(self, threadID, image, label, slice_no)
       self.threadID = threadID
       self.image = image
       self.label = label 
