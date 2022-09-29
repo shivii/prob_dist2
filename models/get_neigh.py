@@ -3,16 +3,16 @@
 # -*- coding: utf-8 -*-
 import torch
 
-def get_neighb_list(image, label):
+def get_neighb_list(image):
     print("----------------------getting neighbours list-------------------------")
     image = torch.squeeze(image)
     print("image:", image.shape)
     shape_i, shape_j, shape_k  = image.shape
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    label = label.to(device)
+    #label = label.to(device)
     features = torch.zeros((0,6), dtype=torch.float32).to(device)
-    labels = torch.zeros((0,1), dtype=torch.float32).to(device)
+    #labels = torch.zeros((0,1), dtype=torch.float32).to(device)
     for i, x in enumerate(image):
         #print("x1", x.shape)
         #print("----------------------computing neighbours")
@@ -85,8 +85,8 @@ def get_neighb_list(image, label):
                 #print("feature:", feature, feature.shape)
                 #feature = torch.cat((fr, up, lf, rt, dw, bc))                
                 features = torch.cat((features, feature),0)
-                labels = torch.cat((labels, label), 0)
-    print("features, labels shape :", features.shape, labels.shape)
+                #labels = torch.cat((labels, label), 0)
+    #print("features, labels shape :", features.shape, labels.shape)
     
     print("returning list")
-    return features, labels
+    return features
