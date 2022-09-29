@@ -125,14 +125,15 @@ def neigh_mt(image, label):
     t2.start()
   
 	# wait until thread 1 is completely executed
-    f1, l1 = t0.join()
-    f2, l2 = t1.join()
-    f3, l3 = t2.join()
+    t0.join()
+    t1.join()
+    t2.join()
     
-    f = torch.cat((f1, f2, f3), dim =0)
-    l = torch.cat((l1, l2, l3), dim =0)
+    #f = torch.cat((f1, f2, f3), dim =0)
+    #l = torch.cat((l1, l2, l3), dim =0)
     print("done threading !")
-    
+    f = image
+    l = label
     return f, l
     
     
