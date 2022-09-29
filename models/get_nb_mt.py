@@ -102,7 +102,7 @@ class myThread (Thread):
       self.image = image
       self.label = label 
       self._return = None
-   def run(self):
+   def start(self):
       print ("Starting " + self.threadID)
       self._return = get_neighb_list(self.image, self.label, self.slice_no)
       print ("Exiting " + self.threadID)
@@ -113,6 +113,7 @@ class myThread (Thread):
 
 
 def neigh_mt(image, label):
+    
     image = torch.squeeze(image)
     print("image:", image.shape)
     m1 = image
