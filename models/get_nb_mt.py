@@ -90,23 +90,27 @@ def get_neighb_list(image, label, slice_no):
                     features = torch.cat((features, feature),0)
                     labels = torch.cat((labels, label), 0)
     
-    print("features, labels shape :", features.shape, labels.shape)
+    #print("features, labels shape :", features.shape, labels.shape)
     
     print("returning list")
     return features, labels
 
-class ThreadWithReturnValue(Thread):
-    def __init__(self, group=None, target=None, name=None,
-                 args=(), kwargs={}):
-        Thread.__init__(self, group, target, name, args, kwargs)
-        self._return = None
-    def run(self):
-        if self._Thread__target is not None:
-            self._return = self._Thread__target(*self._Thread__args,
-                                                **self._Thread__kwargs)
-    def join(self):
-        Thread.join(self)
-        return self._return
+class myThread (Thread):
+   def __init__(self, threadID, image, label, slice_no):
+      Thread.__init__(self)
+      self.threadID = threadID
+      self.image = image
+      self.labe = label 
+      self._return = None
+   def run(self):
+      print ("Starting " + self.name)
+      self._return = get_neighb_list(self.image, self.label, self.slice_no)
+      print ("Exiting " + self.name)
+
+   def join(self):
+      Thread.join(self)
+      return self._return
+
 
 def neigh_mt(image, label):
     image = torch.squeeze(image)
@@ -116,24 +120,23 @@ def neigh_mt(image, label):
     m3 = image
     
     # creating thread
-    t0 = ThreadWithReturnValue(target=get_neighb_list, args=(m1,label, 0))
-    t1 = ThreadWithReturnValue(target=get_neighb_list, args=(m2,label, 1))
-    t2 = ThreadWithReturnValue(target=get_neighb_list, args=(m3,label, 2))
+    t0 = myThread(target=get_neighb_list, args=(m1,label, 0))
+    t1 = myThread(target=get_neighb_list, args=(m2,label, 1))
+    t2 = myThread(target=get_neighb_list, args=(m3,label, 2))
   
     t0.start()
     t1.start()
     t2.start()
   
 	# wait until thread 1 is completely executed
-    t0.join()
-    t1.join()
-    t2.join()
+    f1, l1 = t0.join()
+    f2, l2 = t1.join()
+    f3, l3 = t2.join()
     
-    #f = torch.cat((f1, f2, f3), dim =0)
-    #l = torch.cat((l1, l2, l3), dim =0)
+    f = torch.cat((f1, f2, f3), dim =0)
+    l = torch.cat((l1, l2, l3), dim =0)
     print("done threading !")
-    f = image
-    l = label
+    
     return f, l
     
     
