@@ -120,9 +120,9 @@ def neigh_mt(image, label):
     m3 = image
     
     # creating thread
-    t0 = myThread(target=get_neighb_list, args=(m1,label, 0))
-    t1 = myThread(target=get_neighb_list, args=(m2,label, 1))
-    t2 = myThread(target=get_neighb_list, args=(m3,label, 2))
+    t0 = myThread(1, m1,label, 0)
+    t1 = myThread(2, m2,label, 1)
+    t2 = myThread(3, m3,label, 2)
   
     t0.start()
     t1.start()
