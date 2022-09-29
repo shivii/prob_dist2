@@ -104,11 +104,12 @@ class myThread (Thread):
       self.slice_no = slice_no
       self._return = None
    def start(self):
-      print ("Starting " ,self.threadID)
+      print ("Starting " , self.threadID, threading.current_thread().ident)
       self._return = get_neighb_list(self.image, self.label, self.slice_no)
-      print ("Exiting " , self.threadID)
+      print ("Exiting " , self.threadID, threading.current_thread().ident)
 
    def join(self):
+      print("Trying to join", threading.current_thread().ident)
       Thread.join(self)
       return self._return
 
