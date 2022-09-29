@@ -5,6 +5,7 @@
 # -*- coding: utf-8 -*-
 import torch
 from threading import Thread
+import threading
 
 def get_neighb_list(image, label, slice_no):
     print("----------------------getting neighbours list-------------------------")
