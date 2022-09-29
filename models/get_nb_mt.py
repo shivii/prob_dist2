@@ -103,9 +103,9 @@ class myThread (Thread):
       self.label = label 
       self._return = None
    def start(self):
-      print ("Starting " + self.threadID)
+      print ("Starting " ,self.threadID)
       self._return = get_neighb_list(self.image, self.label, self.slice_no)
-      print ("Exiting " + self.threadID)
+      print ("Exiting " , self.threadID)
 
    def join(self):
       Thread.join(self)
