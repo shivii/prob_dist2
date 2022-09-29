@@ -7,6 +7,8 @@ from . import get_neigh
 import numpy as np
 from models import cycle_tsne
 import time
+import torchvision.transforms as transforms
+
 ##############TSNE changes
 
 
@@ -206,10 +208,14 @@ class CycleGANModel(BaseModel):
         # get features and embedding from VGG19---------------------------------------- ###
         
         start = time.time()
-        featA, lblA = get_neigh.get_neighb_list(self.real_A, self.real)
-        featB, lblB = get_neigh.get_neighb_list(self.real_B, self.real)
-        featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
-        featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
+        
+        trans = transforms.Lambda(get_neigh.get_neighb_list)
+        
+        
+        featA, lblA = trans(self.real_A, self.real)
+        featB, lblB = trans(self.real_B, self.real)
+        featCycleA, lblCycleA = trans(self.fake_A, self.fake)
+        featCycleB, lblCycleB = trans(self.fake_B, self.fake)
         end = time.time()
 
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
