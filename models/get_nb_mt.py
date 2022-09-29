@@ -101,6 +101,7 @@ class myThread (Thread):
       self.threadID = threadID
       self.image = image
       self.label = label 
+      self.slice_no = slice_no
       self._return = None
    def start(self):
       print ("Starting " ,self.threadID)
