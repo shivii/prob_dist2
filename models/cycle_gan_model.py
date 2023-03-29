@@ -3,7 +3,8 @@ import itertools
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
-from . import get_neigh
+##from . import get_neigh
+from . import get_neigh_dist
 import numpy as np
 from models import cycle_tsne
 import time
@@ -203,14 +204,32 @@ class CycleGANModel(BaseModel):
             self.loss_idt_B = 0
             
         ##########TSNE changes
-        # get features and embedding from VGG19---------------------------------------- ###
+        # ---------- ###
         
         start = time.time()
-        featA, lblA = get_neigh.get_neighb_list(self.real_A, self.real)
-        featB, lblB = get_neigh.get_neighb_list(self.real_B, self.real)
-        featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
-        featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
-        end = time.time()
+        #featA, lblA = get_neigh.get_neighb_list(self.real_A, self.real)
+        #featB, lblB = get_neigh.get_neighb_list(self.real_B, self.real)
+        #featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
+        #featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
+        #end = time.time()
+
+	# changes for distributed get_neigh_dist
+	multiprocessing.set_start_method('spawn', force=True)
+	p1 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(real_A, real, featA, lblA,))
+	p2 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(real_B, real, featB, lblB,))
+	p3 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(fake_A, fake, featCycleA, lblCycleA,))
+	p4 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(fake_B, fake, featCycleB, lblCycleB,))        
+	p1.start()
+	p2.start()
+	p3.start()
+	p4.start()
+	p1.join()
+	p2.join()
+	p3.join()
+	p4.join()
+  
+	elapsed = time.time()
+	print("Time elapsed", elapsed - start) 
 
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
         tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
