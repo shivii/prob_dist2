@@ -5,6 +5,7 @@ from .base_model import BaseModel
 from . import networks
 ##from . import get_neigh
 from . import get_neigh_dist
+import multiprocessing             
 import numpy as np
 from models import cycle_tsne
 import time
@@ -212,31 +213,42 @@ class CycleGANModel(BaseModel):
         #featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
         #featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
         #end = time.time()
-
-	# changes for distributed get_neigh_dist
-	multiprocessing.set_start_method('spawn', force=True)
-	p1 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(real_A, real, featA, lblA,))
-	p2 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(real_B, real, featB, lblB,))
-	p3 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(fake_A, fake, featCycleA, lblCycleA,))
-	p4 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(fake_B, fake, featCycleB, lblCycleB,))        
-	p1.start()
-	p2.start()
-	p3.start()
-	p4.start()
-	p1.join()
-	p2.join()
-	p3.join()
-	p4.join()
-  
-	elapsed = time.time()
-	print("Time elapsed", elapsed - start) 
+        # changes for distributed get_neigh_dist
+        
+   
+        
+        featA = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        lblA = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        featB = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        lblB = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        featCycleA = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        lblCycleA = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        featCycleB = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        lblCycleB = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        
+        multiprocessing.set_start_method('spawn', force=True)
+        p1 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.real_A, self.real, self.featA, self.lblA,))
+        p2 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.real_B, self.real, self.featB, self.lblB,))
+        p3 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.fake_A, self.fake, self.featCycleA, self.lblCycleA,))
+        p4 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.fake_B, self.fake, self.featCycleB, self.lblCycleB,))        
+        p1.start()
+        p2.start()
+        p3.start()
+        p4.start()
+        p1.join()
+        p2.join()
+        p3.join()
+        p4.join()
+        
+        elapsed = time.time()
+        print("Time elapsed", elapsed - start) 
 
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
         tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
         labels_A = torch.cat((lblA, lblCycleA), 0)
         labels_B = torch.cat((lblB, lblCycleB), 0)
         
-        print("time:", (end-start))
+        print("time:", (elapsed-start))
         print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
         print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
         print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
