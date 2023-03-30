@@ -217,14 +217,14 @@ class CycleGANModel(BaseModel):
         
    
         
-        featA = torch.zeros((0,6), dtype=torch.float32).to(self.device)
-        lblA = torch.zeros((0,1), dtype=torch.float32).to(self.device)
-        featB = torch.zeros((0,6), dtype=torch.float32).to(self.device)
-        lblB = torch.zeros((0,1), dtype=torch.float32).to(self.device)
-        featCycleA = torch.zeros((0,6), dtype=torch.float32).to(self.device)
-        lblCycleA = torch.zeros((0,1), dtype=torch.float32).to(self.device)
-        featCycleB = torch.zeros((0,6), dtype=torch.float32).to(self.device)
-        lblCycleB = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        self.featA = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        self.lblA = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        self.featB = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        self.lblB = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        self.featCycleA = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        self.lblCycleA = torch.zeros((0,1), dtype=torch.float32).to(self.device)
+        self.featCycleB = torch.zeros((0,6), dtype=torch.float32).to(self.device)
+        self.lblCycleB = torch.zeros((0,1), dtype=torch.float32).to(self.device)
         
         multiprocessing.set_start_method('spawn', force=True)
         p1 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.real_A, self.real, self.featA, self.lblA,))
