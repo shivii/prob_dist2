@@ -40,7 +40,7 @@ def compute_tsne(tsne_embeddings, labels, epoch, a_or_b):
     tx = tsne_data[:,0]
     ty = tsne_data[:,1]
     
-    cycle_tsne.plot_representations(tx, ty, labels, epoch, a_or_b)
+    cycle_tsne.plot_representations(tx, ty, labels, a_or_b, epoch)
 
     distance = cycle_tsne.tsne_loss(tx, ty)
     return distance
