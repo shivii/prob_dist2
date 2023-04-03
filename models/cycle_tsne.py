@@ -40,7 +40,7 @@ def plot_representations(tx, ty, labels, name, epoch):
     
     # build a legend using the labels we set previously
     ax.legend(loc='best')
-    plot_name = "projection_"+ epoch + name
+    plot_name = "projection_" + str(epoch) + "_"+ name
     plt.savefig(plot_name)    
     # finally, show the plot
     #plt.show()

@@ -187,6 +187,10 @@ class CycleGANModel(BaseModel):
         featB = vgg_ft(self.real_B)
         featCycleA = vgg_ft(self.rec_A)
         featCycleB = vgg_ft(self.rec_B)
+        print("A vgg features shape:", featA.shape)
+        print("B vgg features shape:", featB.shape)
+        print("A vgg labels shape:", featCycleA.shape)
+        print("B vgg labels shape:", featCycleB.shape)
         
         # tsne for B, Cycle B
         # tsne for A, Cycle A    
@@ -201,10 +205,10 @@ class CycleGANModel(BaseModel):
         tsne_embeddingsB = torch.cat((tsne_embeddingsB, featCycleB.detach().cpu()), 0)
         labels_B = torch.cat((labels_B, self.fake),0)
         
-        #print("A vgg features shape:", tsne_embeddingsA.shape)
-        #print("B vgg features shape:", tsne_embeddingsB.shape)
-        #print("A vgg labels shape:", labels_A.shape)
-        #print("B vgg labels shape:", labels_B.shape)
+        print("A emb features shape:", tsne_embeddingsA.shape)
+        print("B emb features shape:", tsne_embeddingsB.shape)
+        print("A emb labels shape:", labels_A.shape)
+        print("B emb labels shape:", labels_B.shape)
 
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
