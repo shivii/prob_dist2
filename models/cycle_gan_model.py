@@ -172,7 +172,7 @@ class CycleGANModel(BaseModel):
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
         
         
-    def compute_tsne(self, tsne_embeddings, labels, a_or_b):
+    def compute_tsne(self, tsne_embeddings, labels, a_or_b, epoch):
         tsne_ft= np.array(tsne_embeddings)
         #print("tsne ft:", tsne_ft.shape)
             
@@ -182,12 +182,12 @@ class CycleGANModel(BaseModel):
         tx = tsne_data[:,0]
         ty = tsne_data[:,1]
         
-        cycle_tsne.plot_representations(tx, ty, labels, a_or_b)
+        #cycle_tsne.plot_representations(tx, ty, labels, a_or_b, epoch)
 
         distance = cycle_tsne.tsne_loss(tx, ty)
         return distance
 
-    def backward_G(self, opt):
+    def backward_G(self, opt, epoch):
         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
         lambda_A = self.opt.lambda_A
@@ -207,15 +207,15 @@ class CycleGANModel(BaseModel):
         ##########TSNE changes
         # ---------- ###
         patch_size = opt.patch_size
-        start = time.time()
+        start_vgg = time.time()
         featA, lblA = get_patches.get_patch_list(self.real_A, self.real, patch_size)
         featB, lblB = get_patches.get_patch_list(self.real_B, self.real, patch_size)
         featCycleA, lblCycleA = get_patches.get_patch_list(self.fake_A, self.fake, patch_size)
         featCycleB, lblCycleB = get_patches.get_patch_list(self.fake_B, self.fake, patch_size)
         end = time.time()
 
-        elapsed = time.time()
-        #print("Time elapsed", elapsed - start) 
+        elapsed_vgg = time.time()
+        print("Time elapsed for vgg", elapsed_vgg - start_vgg) 
 
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
         tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
@@ -237,8 +237,13 @@ class CycleGANModel(BaseModel):
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
         
         # TSNE loss
-        self.loss_tsne_A = self.compute_tsne(tsne_embeddingsA, labels_A, "A")
-        self.loss_tsne_B = self.compute_tsne(tsne_embeddingsB, labels_B, "B")
+        start_tsne = time.time()
+        self.loss_tsne_A = self.compute_tsne(tsne_embeddingsA, labels_A, "A", epoch)
+        self.loss_tsne_B = self.compute_tsne(tsne_embeddingsB, labels_B, "B", epoch)
+        elapsed_tsne = time.time()
+        print("Time elapsed for tsne", elapsed_tsne - start_tsne) 
+        
+        
         #print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
         # combined loss and calculate gradients
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_tsne_A + self.loss_tsne_B
@@ -247,14 +252,14 @@ class CycleGANModel(BaseModel):
         
         return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B
 
-    def optimize_parameters(self, opt):
+    def optimize_parameters(self, opt, epoch):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         self.forward()      # compute fake images and reconstruction images.
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        self.backward_G(opt)             # calculate gradients for G_A and G_B
+        self.backward_G(opt, epoch)             # calculate gradients for G_A and G_B
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)

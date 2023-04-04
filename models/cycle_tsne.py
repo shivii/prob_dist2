@@ -15,7 +15,7 @@ def get_tsne(data, labels):
     tsne_data = TSNE(n_components=2, perplexity=15, learning_rate=10).fit_transform(data)
     return tsne_data
     
-def plot_representations(tx, ty, labels, name):
+def plot_representations(tx, ty, labels, name, epoch):
     classes = [1,0]
     # initialize a matplotlib plot
         
@@ -40,7 +40,7 @@ def plot_representations(tx, ty, labels, name):
     
     # build a legend using the labels we set previously
     ax.legend(loc='best')
-    plot_name = "projection_" + name
+    plot_name = "projection_"+ str(epoch) + "_" + name
     plt.savefig(plot_name)    
     # finally, show the plot
     #plt.show()
