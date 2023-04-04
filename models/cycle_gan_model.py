@@ -187,7 +187,7 @@ class CycleGANModel(BaseModel):
         distance = cycle_tsne.tsne_loss(tx, ty)
         return distance
 
-    def backward_G(self):
+    def backward_G(self, opt):
         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
         lambda_A = self.opt.lambda_A
@@ -206,12 +206,12 @@ class CycleGANModel(BaseModel):
             
         ##########TSNE changes
         # ---------- ###
-        
+        patch_size = opt.patch_size
         start = time.time()
-        featA, lblA = get_patches.get_patch_list(self.real_A, self.real, 2)
-        featB, lblB = get_patches.get_patch_list(self.real_B, self.real, 2)
-        featCycleA, lblCycleA = get_patches.get_patch_list(self.fake_A, self.fake, 2)
-        featCycleB, lblCycleB = get_patches.get_patch_list(self.fake_B, self.fake, 2)
+        featA, lblA = get_patches.get_patch_list(self.real_A, self.real, patch_size)
+        featB, lblB = get_patches.get_patch_list(self.real_B, self.real, patch_size)
+        featCycleA, lblCycleA = get_patches.get_patch_list(self.fake_A, self.fake, patch_size)
+        featCycleB, lblCycleB = get_patches.get_patch_list(self.fake_B, self.fake, patch_size)
         end = time.time()
 
         elapsed = time.time()
@@ -247,14 +247,14 @@ class CycleGANModel(BaseModel):
         
         return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B
 
-    def optimize_parameters(self):
+    def optimize_parameters(self, opt):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         self.forward()      # compute fake images and reconstruction images.
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        self.backward_G()             # calculate gradients for G_A and G_B
+        self.backward_G(opt)             # calculate gradients for G_A and G_B
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)

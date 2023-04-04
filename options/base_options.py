@@ -21,6 +21,9 @@ class BaseOptions():
         """Define the common options that are used in both training and test."""
         # basic parameters
         
+        # added by shivangi
+        parser.add_argument('--patch_size', type=int, default='4', help='patch size can be 2, 4, 8...')
+        
         #parser.add_argument('--trained_model_path', required=True, help='path to trained model')
         parser.add_argument('--project_name', required=True, help='project name')
         parser.add_argument('--A_or_B', type=str, default='A', help='for test time:A A->B else B:B->A')
