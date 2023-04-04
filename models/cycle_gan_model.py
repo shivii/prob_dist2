@@ -5,10 +5,12 @@ from .base_model import BaseModel
 from . import networks
 ##from . import get_neigh
 from . import get_neigh_dist
-import multiprocessing             
+import torch.multiprocessing             
 import numpy as np
 from models import cycle_tsne
 import time
+from signal import signal, SIGPIPE, SIG_DFL  
+signal(SIGPIPE,SIG_DFL)
 ##############TSNE changes
 
 
@@ -226,11 +228,11 @@ class CycleGANModel(BaseModel):
         featCycleB = torch.zeros((0,6), dtype=torch.float32).to(self.device)
         lblCycleB = torch.zeros((0,1), dtype=torch.float32).to(self.device)
         
-        multiprocessing.set_start_method('spawn', force=True)
-        p1 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.real_A, self.real, featA, lblA,))
-        p2 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.real_B, self.real, featB, lblB,))
-        p3 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.fake_A, self.fake, featCycleA, lblCycleA,))
-        p4 = multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.fake_B, self.fake, featCycleB, lblCycleB,))        
+        torch.multiprocessing.set_start_method('spawn', force=True)
+        p1 = torch.multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.real_A, self.real, featA, lblA,))
+        p2 = torch.multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.real_B, self.real, featB, lblB,))
+        p3 = torch.multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.fake_A, self.fake, featCycleA, lblCycleA,))
+        p4 = torch.multiprocessing.Process(target=get_neigh_dist.get_neighb_list_thread, args=(self.fake_B, self.fake, featCycleB, lblCycleB,))        
         p1.start()
         p2.start()
         p3.start()

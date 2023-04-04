@@ -1,18 +1,18 @@
 import time 
 # import threading
-# import torch.multiprocessing as mp
-import multiprocessing
+import torch.multiprocessing as mp
+#import multiprocessing
 import time 
 import torch
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 def get_neighb_list_thread(image, label, features, labels):
     print("----------------------getting neighbours list-------------------------\n")
-    image = torch.squeeze(image)
+    image = torch.squeeze(image).to(device)
     print("image:", image.shape)
     shape_i, shape_j, shape_k  = image.shape
     # device = "cuda" if torch.cuda.is_available() else "cpu"
-    # features = features.to(device) 
-    # labels = labels.to(device)
+    features = features.to(device) 
+    labels = labels.to(device)
 
     label = label.to(device)
     for i, x in enumerate(image):
