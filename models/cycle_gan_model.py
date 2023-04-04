@@ -3,7 +3,9 @@ import itertools
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
-from . import get_neigh
+##from . import get_neigh
+from . import get_patches
+import multiprocessing             
 import numpy as np
 from models import cycle_tsne
 import time
@@ -203,21 +205,24 @@ class CycleGANModel(BaseModel):
             self.loss_idt_B = 0
             
         ##########TSNE changes
-        # get features and embedding from VGG19---------------------------------------- ###
+        # ---------- ###
         
         start = time.time()
-        featA, lblA = get_neigh.get_neighb_list(self.real_A, self.real)
-        featB, lblB = get_neigh.get_neighb_list(self.real_B, self.real)
-        featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
-        featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
+        featA, lblA = get_patches.get_patch_list(self.real_A, self.real, 2)
+        featB, lblB = get_patches.get_patche_list(self.real_B, self.real, 2)
+        featCycleA, lblCycleA = get_patches.get_patch_list(self.fake_A, self.fake, 2)
+        featCycleB, lblCycleB = get_patches.get_patch_list(self.fake_B, self.fake, 2)
         end = time.time()
+
+        elapsed = time.time()
+        print("Time elapsed", elapsed - start) 
 
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
         tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
         labels_A = torch.cat((lblA, lblCycleA), 0)
         labels_B = torch.cat((lblB, lblCycleB), 0)
         
-        print("time:", (end-start))
+        print("time:", (elapsed))
         print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
         print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
         print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
