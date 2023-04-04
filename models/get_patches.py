@@ -18,12 +18,9 @@ def resize_patch(x, patch_size):
 
 def create_patch(img, patch_size):
   size = patch_size
-  transt = transforms.ToTensor()
-  transp = transforms.ToPILImage()
-  img_t = transt(Image.open('n02381460_1740.jpg'))
   #torch.Tensor.unfold(dimension, size, step)
   #slices the images into 8*8 size patches
-  patches = img_t.data.unfold(0, 3, 3).unfold(1, size, size).unfold(2, size, size)
+  patches = img.data.unfold(0, 3, 3).unfold(1, size, size).unfold(2, size, size)
   #print(patches.shape)
   count = 0
   total_patches_x = 256/(patch_size)
@@ -41,9 +38,9 @@ def get_patch_list(image, label, patch_size):
     print("----------------------getting neighbours list-------------------------")
     image = torch.squeeze(image)
     print("image:", image.shape)
-    transt = transforms.ToTensor()
-    transp = transforms.ToPILImage()
-    image = transt(image)
+    #transt = transforms.ToTensor()
+    #transp = transforms.ToPILImage()
+    #image = transt(image)
     shape_i, shape_j, shape_k  = image.shape
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
