@@ -215,17 +215,17 @@ class CycleGANModel(BaseModel):
         end = time.time()
 
         elapsed = time.time()
-        print("Time elapsed", elapsed - start) 
+        #print("Time elapsed", elapsed - start) 
 
         tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
         tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
         labels_A = torch.cat((lblA, lblCycleA), 0)
         labels_B = torch.cat((lblB, lblCycleB), 0)
         
-        print("time:", (elapsed))
-        print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
-        print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
-        print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
+        #print("time:", (elapsed))
+        #print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
+        #print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
+        #print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
 
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
@@ -239,7 +239,7 @@ class CycleGANModel(BaseModel):
         # TSNE loss
         self.loss_tsne_A = self.compute_tsne(tsne_embeddingsA, labels_A, "A")
         self.loss_tsne_B = self.compute_tsne(tsne_embeddingsB, labels_B, "B")
-        print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
+        #print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
         # combined loss and calculate gradients
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_tsne_A + self.loss_tsne_B
         
