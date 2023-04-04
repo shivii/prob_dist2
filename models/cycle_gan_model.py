@@ -174,7 +174,7 @@ class CycleGANModel(BaseModel):
         
     def compute_tsne(self, tsne_embeddings, labels, a_or_b):
         tsne_ft= np.array(tsne_embeddings)
-        print("tsne ft:", tsne_ft.shape)
+        #print("tsne ft:", tsne_ft.shape)
             
         tsne_data = cycle_tsne.get_tsne(tsne_ft, labels)
         tsne_data = cycle_tsne.scale_to_01_range(tsne_data)
