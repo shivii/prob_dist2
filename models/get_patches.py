@@ -43,7 +43,7 @@ def get_patch_list(image, label, patch_size):
         for j in range(total_patches_x):
             #print(patches[0][i][j].size)
             resized_patch = resize_patch(patches[0][i][j], patch_size).to(device)
-            print(resized_patch.shape)
+            #print(resized_patch.shape)
             features = torch.cat((features, resized_patch),0)
             labels = torch.cat((labels, label), 0)
             count = count + 1
