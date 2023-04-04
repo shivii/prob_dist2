@@ -209,7 +209,7 @@ class CycleGANModel(BaseModel):
         
         start = time.time()
         featA, lblA = get_patches.get_patch_list(self.real_A, self.real, 2)
-        featB, lblB = get_patches.get_patche_list(self.real_B, self.real, 2)
+        featB, lblB = get_patches.get_patch_list(self.real_B, self.real, 2)
         featCycleA, lblCycleA = get_patches.get_patch_list(self.fake_A, self.fake, 2)
         featCycleB, lblCycleB = get_patches.get_patch_list(self.fake_B, self.fake, 2)
         end = time.time()
