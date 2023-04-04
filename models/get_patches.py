@@ -27,7 +27,7 @@ def create_patch(img, patch_size):
   for i in range(total_patches_x):
       for j in range(total_patches_x):
           #print(patches[0][i][j].size)
-          resized_patch = resize_patch(patches[0][i][j])
+          resized_patch = resize_patch(patches[0][i][j], patch_size)
           #print(resized_patch.shape)
           count = count + 1
   print("Total patches:", count)
