@@ -11,7 +11,7 @@ import numpy as np
 #reshape patch
 def resize_patch(x, patch_size):
   #print("size of Patch :", x.shape)
-  size = 3*patch_size*patch_size
+  size = int(3*patch_size*patch_size)
   result = x.reshape(1,size)
   #print(result.shape)
   return result
@@ -23,7 +23,7 @@ def create_patch(img, patch_size):
   patches = img.data.unfold(0, 3, 3).unfold(1, size, size).unfold(2, size, size)
   #print(patches.shape)
   count = 0
-  total_patches_x = 256/(patch_size)
+  total_patches_x = int(256/(patch_size))
   for i in range(total_patches_x):
       for j in range(total_patches_x):
           #print(patches[0][i][j].size)
