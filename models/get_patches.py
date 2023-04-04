@@ -18,9 +18,9 @@ def resize_patch(x, patch_size):
 
 
 def get_patch_list(image, label, patch_size):
-    print("----------------------getting neighbours list-------------------------")
+    #print("----------------------getting neighbours list-------------------------")
     image = torch.squeeze(image)
-    print("image:", image.shape)
+    #print("image:", image.shape)
     #transt = transforms.ToTensor()
     #transp = transforms.ToPILImage()
     #image = transt(image)
@@ -46,9 +46,9 @@ def get_patch_list(image, label, patch_size):
             features = torch.cat((features, resized_patch),0)
             labels = torch.cat((labels, label), 0)
             count = count + 1
-    print("Total patches:", count)
+    #print("Total patches:", count)
 
-    print("features, labels shape :", features.shape, labels.shape)
+    #print("features, labels shape :", features.shape, labels.shape)
             
-    print("returning list")
+    #print("returning list")
     return features, labels

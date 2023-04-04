@@ -239,7 +239,7 @@ class CycleGANModel(BaseModel):
         # TSNE loss
         self.loss_tsne_A = self.compute_tsne(tsne_embeddingsA, labels_A, "A")
         self.loss_tsne_B = self.compute_tsne(tsne_embeddingsB, labels_B, "B")
-        
+        print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
         # combined loss and calculate gradients
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_tsne_A + self.loss_tsne_B
         
