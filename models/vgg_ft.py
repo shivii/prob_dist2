@@ -15,7 +15,7 @@ class VGGLoss(nn.Module):
         model = models.vgg19()
         
         #print(model)
-        model.load_state_dict(torch.load("vgg19_3_4_23_pytorch.pt"))
+        model.load_state_dict(torch.load("vgg16_4_4_23_pytorch.pt"))
         self.vgg_ft = model.features.eval().to(self.device)
         #self.vgg_ft = model.features.eval()
         self.avgpool = nn.AdaptiveAvgPool2d(7).to(self.device)
