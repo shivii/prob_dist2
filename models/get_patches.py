@@ -26,9 +26,10 @@ def get_patch_list(image, label, patch_size):
     #image = transt(image)
     shape_i, shape_j, shape_k  = image.shape
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    size = int(3*patch_size*patch_size)
     
     label = label.to(device)
-    features = torch.zeros((0,12), dtype=torch.float32).to(device)
+    features = torch.zeros((0,size), dtype=torch.float32).to(device)
     labels = torch.zeros((0,1), dtype=torch.float32).to(device)
     
     size = patch_size
