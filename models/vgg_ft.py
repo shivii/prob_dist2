@@ -12,7 +12,7 @@ class VGGLoss(nn.Module):
         #vgg19_config = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512,
         #                        512, 512, 'M', 512, 512, 512, 512, 'M']
         #vgg19_layers = get_vgg_layers(vgg19_config, batch_norm=True)
-        model = models.vgg19()
+        model = models.vgg16()
         
         #print(model)
         model.load_state_dict(torch.load("vgg16_4_4_23_pytorch.pt"))
