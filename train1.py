@@ -74,9 +74,9 @@ if __name__ == '__main__':
         
         
         tsne_embeddingsA = torch.zeros((0, 3072), dtype=torch.float32)
-        labels_A = torch.zeros((0,1), dtype=torch.uint8).to(device)       
+        labels_A = torch.zeros((0,1), dtype=torch.uint8)    
         tsne_embeddingsB = torch.zeros((0, 3072), dtype=torch.float32)
-        labels_B = torch.zeros((0,1), dtype=torch.uint8).to(device)
+        labels_B = torch.zeros((0,1), dtype=torch.uint8)
         
         
         for i, data in enumerate(dataset):  # inner loop within one epoch
