@@ -106,8 +106,12 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+        
+        
+        print("Total Embedding shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape , labels_A.shape, labels_B.shape)
         distanceA = compute_tsne(tsne_embeddingsA, labels_A, i, "A")
         distanceB = compute_tsne(tsne_embeddingsB, labels_B, i, "B")
+        
             
         
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
