@@ -74,6 +74,7 @@ def scale_to_01_range(x):
 
 
 def tsne_loss(tx, ty):
+    print("Computing TSNE loss")
     distances = []
     for i in range(0, len(tx), 2):
         p1 = (tx[i], ty[i]) # first point
@@ -81,6 +82,7 @@ def tsne_loss(tx, ty):
         dist = sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2) # Pythagorean theorem
         distances.append(dist)
     distance = mean(distances)
+    print("computed TSNE distances", distance.shape)
     return distance
 
 if __name__ == '__main__':

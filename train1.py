@@ -31,6 +31,7 @@ from models import cycle_tsne
 ##############TSNE changes
 
 def compute_tsne(tsne_embeddings, labels, a_or_b):
+    print("In function compute TSNE")
     tsne_ft= np.array(tsne_embeddings)
     #print("tsne ft:", tsne_ft.shape)
         
@@ -43,6 +44,7 @@ def compute_tsne(tsne_embeddings, labels, a_or_b):
     #cycle_tsne.plot_representations(tx, ty, labels, a_or_b, epoch)
 
     distance = cycle_tsne.tsne_loss(tx, ty)
+    print("TSNE distance is:")
     return distance
 
 
@@ -80,6 +82,7 @@ if __name__ == '__main__':
         
         
         for i, data in enumerate(dataset):  # inner loop within one epoch
+            print("In iteration :", i)
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
