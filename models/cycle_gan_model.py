@@ -209,6 +209,7 @@ class CycleGANModel(BaseModel):
         # ---------- ###
         patch_size = opt.patch_size
         print("computing features")
+        print("patch_size:", patch_size)
   
         featA, lblA = get_patches.get_patch_list(self.real_A, self.real, patch_size)
         featB, lblB = get_patches.get_patch_list(self.real_B, self.real, patch_size)
