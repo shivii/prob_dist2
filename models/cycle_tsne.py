@@ -1,21 +1,33 @@
 # -*- coding: utf-8 -*-
 #from sklearn.manifold import TSNE
-from tsnecuda import TSNE
+import torch
+from tsnecuda import TSNE 
+from sklearn.manifold import TSNE as TSNE_sk
 import matplotlib.pyplot as plt
 import numpy as np
 from math import sqrt
 from statistics import mean
+from models.utility import print_with_time as print
 
 
 def get_tsne(data, labels):  
     n_components = 2
     #tsne = TSNE(n_components = n_components, random_state = 0)
     #tsne_data = tsne.fit_transform(data)
-    #print("computing TSNE")
+    print("computing TSNE for data with size:", data.shape)
     tsne_data = TSNE(n_components=2, perplexity=15, learning_rate=10).fit_transform(data)
+    print("Computed TSNE data has size:", tsne_data.shape)
     return tsne_data
-    
-def plot_representations(tx, ty, labels, name, epoch):
+
+def get_tsne_sk(data, labels):
+    n_components = 2
+    print("computing TSNE for data with size:", data.shape)
+    tsne = TSNE_sk(n_components = n_components, random_state = 0)
+    tsne_data = tsne.fit_transform(data)
+    print("Computed TSNE data has size:", tsne_data.shape)
+    return tsne_data
+
+def plot_representations(tx, ty, labels, name):
     classes = [1,0]
     # initialize a matplotlib plot
         
@@ -40,7 +52,7 @@ def plot_representations(tx, ty, labels, name, epoch):
     
     # build a legend using the labels we set previously
     ax.legend(loc='best')
-    plot_name = "projection_"+ str(epoch) + "_" + name
+    plot_name = "projection_" + name
     plt.savefig(plot_name)    
     # finally, show the plot
     #plt.show()
@@ -67,3 +79,8 @@ def tsne_loss(tx, ty):
         distances.append(dist)
     distance = mean(distances)
     return distance
+
+if __name__ == '__main__':
+    data = torch.rand(4096, 48)
+
+    get_tsne_sk(data, 1)
