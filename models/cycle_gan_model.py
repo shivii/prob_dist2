@@ -204,14 +204,20 @@ class CycleGANModel(BaseModel):
 
         print("Computing embeddings") 
         tsne_embeddingsA = torch.cat((tsne_embeddingsA, featA.detach().cpu()), 0)
-        labels_A = torch.cat((labels_A, lblA),0)
+        labels_A = torch.cat((labels_A, lblA.detach().cpu()),0)
         tsne_embeddingsA = torch.cat((tsne_embeddingsA, featCycleA.detach().cpu()), 0)
-        labels_A = torch.cat((labels_A, lblCycleA),0)
+        labels_A = torch.cat((labels_A, lblCycleA.detach().cpu()),0)
         
         tsne_embeddingsB = torch.cat((tsne_embeddingsB, featB.detach().cpu()), 0)
-        labels_B = torch.cat((labels_B, lblB),0)
+        labels_B = torch.cat((labels_B, lblB.detach().cpu()),0)
         tsne_embeddingsB = torch.cat((tsne_embeddingsB, featCycleB.detach().cpu()), 0)
-        labels_B = torch.cat((labels_B, lblCycleB),0) 
+        labels_B = torch.cat((labels_B, lblCycleB.detach().cpu()),0)
+
+        tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
+        tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
+        labels_A = torch.cat((lblA, lblCycleA), 0)
+        labels_B = torch.cat((lblB, lblCycleB), 0)
+        
         
         print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
         print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
