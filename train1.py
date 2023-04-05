@@ -30,7 +30,7 @@ from models.utility import print_with_time as print
 from models import cycle_tsne
 ##############TSNE changes
 
-def compute_tsne(self, tsne_embeddings, labels, a_or_b):
+def compute_tsne(tsne_embeddings, labels, a_or_b):
     tsne_ft= np.array(tsne_embeddings)
     #print("tsne ft:", tsne_ft.shape)
         
