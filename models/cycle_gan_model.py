@@ -224,8 +224,8 @@ class CycleGANModel(BaseModel):
         # Backward cycle loss || G_A(G_B(B)) - B||
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
         
-        self.loss_tsne_A = distanceA
-        self.loss_tsne_B = distanceB
+        self.loss_tsne_A = distanceA * lambda_A
+        self.loss_tsne_B = distanceB * lambda_B
                
         
         
