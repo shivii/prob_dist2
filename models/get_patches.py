@@ -25,24 +25,24 @@ def get_patch_list(image, label, patch_size):
     #transp = transforms.ToPILImage()
     #image = transt(image)
     shape_i, shape_j, shape_k  = image.shape
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    #device = "cuda" if torch.cuda.is_available() else "cpu"
     size = int(3*patch_size*patch_size)
     
-    label = label.to(device)
-    features = torch.zeros((0,size), dtype=torch.float32).to(device)
-    labels = torch.zeros((0,1), dtype=torch.float32).to(device)
+    label = label
+    features = torch.zeros((0,size), dtype=torch.float32)
+    labels = torch.zeros((0,1), dtype=torch.float32)
     
     size = patch_size
     #torch.Tensor.unfold(dimension, size, step)
     #slices the images into 8*8 size patches
-    patches = image.data.unfold(0, 3, 3).unfold(1, size, size).unfold(2, size, size).to(device)
+    patches = image.data.unfold(0, 3, 3).unfold(1, size, size).unfold(2, size, size)
     #print(patches.shape)
     count = 0
     total_patches_x = int(256/(patch_size))
     for i in range(total_patches_x):
         for j in range(total_patches_x):
             #print(patches[0][i][j].size)
-            resized_patch = resize_patch(patches[0][i][j], patch_size).to(device)
+            resized_patch = resize_patch(patches[0][i][j], patch_size)
             #print(resized_patch.shape)
             features = torch.cat((features, resized_patch),0)
             labels = torch.cat((labels, label), 0)

@@ -51,6 +51,8 @@ if __name__ == '__main__':
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
     print('The number of training images = %d' % dataset_size)
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     model = create_model(opt)      # create a model given opt.model and other options
     model.setup(opt)               # regular setup: load and print networks; create schedulers
@@ -72,9 +74,9 @@ if __name__ == '__main__':
         
         
         tsne_embeddingsA = torch.zeros((0, 3072), dtype=torch.float32)
-        labels_A = torch.zeros((0,1), dtype=torch.uint8)       
+        labels_A = torch.zeros((0,1), dtype=torch.uint8).to(device)       
         tsne_embeddingsB = torch.zeros((0, 3072), dtype=torch.float32)
-        labels_B = torch.zeros((0,1), dtype=torch.uint8)
+        labels_B = torch.zeros((0,1), dtype=torch.uint8).to(device)
         
         
         for i, data in enumerate(dataset):  # inner loop within one epoch
