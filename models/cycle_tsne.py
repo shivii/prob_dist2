@@ -7,8 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import sqrt
 from statistics import mean
-from models.utility import print_with_time as print
 
+if __name__ == '__main__':
+    from utility import print_with_time as print
+else:
+    from models.utility import print_with_time as print
 
 def get_tsne(data, labels):  
     n_components = 2
@@ -82,5 +85,5 @@ def tsne_loss(tx, ty):
 
 if __name__ == '__main__':
     data = torch.rand(4096, 48)
-
-    get_tsne_sk(data, 1)
+    get_tsne(data, 1)
+    #get_tsne_sk(data, 1)
