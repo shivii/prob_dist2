@@ -44,7 +44,7 @@ def get_patch_list(image, label, patch_size):
             #print(patches[0][i][j].size)
             resized_patch = resize_patch(patches[0][i][j], patch_size)
             #print(resized_patch.shape)
-            features = torch.cat((features, resized_patch),0)
+            features = torch.cat((features.detach().cpu(), resized_patch.detach().cpu()),0)
             labels = torch.cat((labels, label), 0)
             count = count + 1
     #print("Total patches:", count)

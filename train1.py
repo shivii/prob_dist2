@@ -52,7 +52,7 @@ if __name__ == '__main__':
     dataset_size = len(dataset)    # get the number of images in the dataset.
     print('The number of training images = %d' % dataset_size)
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
 
     model = create_model(opt)      # create a model given opt.model and other options
     model.setup(opt)               # regular setup: load and print networks; create schedulers
