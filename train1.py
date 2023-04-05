@@ -26,7 +26,24 @@ from models import create_model
 from util.visualizer import Visualizer
 import numpy as np
 from models.utility import print_with_time as print
+
+from models import cycle_tsne
 ##############TSNE changes
+
+def compute_tsne(self, tsne_embeddings, labels, a_or_b):
+    tsne_ft= np.array(tsne_embeddings)
+    #print("tsne ft:", tsne_ft.shape)
+        
+    tsne_data = cycle_tsne.get_tsne(tsne_ft, labels)
+    tsne_data = cycle_tsne.scale_to_01_range(tsne_data)
+    
+    tx = tsne_data[:,0]
+    ty = tsne_data[:,1]
+    
+    #cycle_tsne.plot_representations(tx, ty, labels, a_or_b, epoch)
+
+    distance = cycle_tsne.tsne_loss(tx, ty)
+    return distance
 
 
 if __name__ == '__main__':
@@ -41,6 +58,9 @@ if __name__ == '__main__':
     total_iters = 0                # the total number of training iterations
     
     print("------------device", opt.gpu_ids)
+    
+    distanceA = 0
+    distanceB = 0
 
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
@@ -48,6 +68,13 @@ if __name__ == '__main__':
         epoch_iter = 0                  # the number of training iterations in current epoch, reset to 0 every epoch
         visualizer.reset()              # reset the visualizer: make sure it saves the results to HTML at least once every epoch
         model.update_learning_rate()    # update learning rates in the beginning of every epoch
+        
+        
+        
+        tsne_embeddingsA = torch.zeros((0, 3072), dtype=torch.float32)
+        labels_A = torch.zeros((0,1), dtype=torch.uint8)       
+        tsne_embeddingsB = torch.zeros((0, 3072), dtype=torch.float32)
+        labels_B = torch.zeros((0,1), dtype=torch.uint8)
         
         
         for i, data in enumerate(dataset):  # inner loop within one epoch
@@ -58,7 +85,7 @@ if __name__ == '__main__':
             total_iters += opt.batch_size
             epoch_iter += opt.batch_size
             model.set_input(data)         # unpack data from dataset and apply preprocessing
-            model.optimize_parameters(opt)   # calculate loss functions, get gradients, update network weights
+            tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B = model.optimize_parameters(opt, tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B, distanceA, distanceB)   # calculate loss functions, get gradients, update network weights
             
 
             if total_iters % opt.display_freq == 0:   # display images on visdom and save images to a HTML file
@@ -79,6 +106,8 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+        distanceA = compute_tsne(tsne_embeddingsA, labels_A, i, "A")
+        distanceB = compute_tsne(tsne_embeddingsB, labels_B, i, "B")
             
         
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
