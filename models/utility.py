@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import time
+from datetime import datetime
 
 def print_with_time(*argument):
-    start_time = time.localtime( time.time() )  
-    start_time = time.strftime("%Y-%m-%d %H:%M:%S", start_time)
+    #start_time = time.localtime( time.time() )  
+    start_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
     print(start_time, argument)

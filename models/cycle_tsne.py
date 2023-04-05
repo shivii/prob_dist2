@@ -84,6 +84,10 @@ def tsne_loss(tx, ty):
     return distance
 
 if __name__ == '__main__':
-    data = torch.rand(70000, 480)
+    data0 = torch.rand(4096, 48)
+    data = torch.rand(4096, 48)
+    data1 = torch.rand(4096, 3072)
+    get_tsne(data0, 1)
     get_tsne(data, 1)
+    get_tsne(data1, 1)
     #get_tsne_sk(data, 1)
