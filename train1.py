@@ -109,8 +109,8 @@ if __name__ == '__main__':
         
         
         print("Total Embedding shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape , labels_A.shape, labels_B.shape)
-        distanceA = compute_tsne(tsne_embeddingsA, labels_A, i, "A")
-        distanceB = compute_tsne(tsne_embeddingsB, labels_B, i, "B")
+        distanceA = compute_tsne(tsne_embeddingsA, labels_A, "A")
+        distanceB = compute_tsne(tsne_embeddingsB, labels_B, "B")
         
             
         
