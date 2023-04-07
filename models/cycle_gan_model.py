@@ -5,6 +5,7 @@ from .base_model import BaseModel
 from . import networks
 ##from . import get_neigh
 from . import get_patches
+from . import get_neigh
 import multiprocessing             
 import numpy as np
 from models import cycle_tsne
@@ -70,9 +71,9 @@ class CycleGANModel(BaseModel):
         self.real = torch.tensor([[1],])
         self.fake = torch.tensor([[0],])
         # initialize various vectors    
-        self.tsne_embeddingsA = torch.zeros((0, 6), dtype=torch.float32)
+        self.tsne_embeddingsA = torch.zeros((0, 24), dtype=torch.float32)
                 
-        self.tsne_embeddingsB = torch.zeros((0, 6), dtype=torch.float32)
+        self.tsne_embeddingsB = torch.zeros((0, 24), dtype=torch.float32)
         
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         visual_names_A = ['real_A', 'fake_B', 'rec_A']
@@ -173,11 +174,11 @@ class CycleGANModel(BaseModel):
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
         
         
-    def compute_tsne(self, tsne_embeddings, labels, a_or_b):
+    def compute_tsne(self, tsne_embeddings):
         tsne_ft= np.array(tsne_embeddings)
         #print("tsne ft:", tsne_ft.shape)
             
-        tsne_data = cycle_tsne.get_tsne_sk(tsne_ft, labels)
+        tsne_data = cycle_tsne.get_tsne(tsne_ft)
         tsne_data = cycle_tsne.scale_to_01_range(tsne_data)
         
         tx = tsne_data[:,0]
@@ -210,24 +211,28 @@ class CycleGANModel(BaseModel):
         patch_size = opt.patch_size
         print("computing features")
         print("patch_size:", patch_size)
-  
-        featA, lblA = get_patches.get_patch_list(self.real_A, self.real, patch_size)
-        featB, lblB = get_patches.get_patch_list(self.real_B, self.real, patch_size)
-        featCycleA, lblCycleA = get_patches.get_patch_list(self.fake_A, self.fake, patch_size)
-        featCycleB, lblCycleB = get_patches.get_patch_list(self.fake_B, self.fake, patch_size)
-        end = time.time()
+
+
+        featA = get_neigh.get_neighb_numpy_impl(self.real_A)
+        featB = get_neigh.get_neighb_numpy_impl(self.real_B)
+        featCycleA = get_neigh.get_neighb_numpy_impl(self.fake_A)
+        featCycleB = get_neigh.get_neighb_numpy_impl(self.fake_B)
 
         print("Computing embeddings") 
+        self.tsne_embeddingsA = torch.cat((self.tsne_embeddingsA, featA.detach().cpu()), 0)
+        #labels_A = torch.cat((labels_A,  lblA),0)
+        self.tsne_embeddingsA = torch.cat((self.tsne_embeddingsA, featCycleA.detach().cpu()), 0)
+        #labels_A = torch.cat((labels_A, lblCycleA),0)
+        
+        self.tsne_embeddingsB = torch.cat((self.tsne_embeddingsB, featB.detach().cpu()), 0)
+        #labels_B = torch.cat((labels_B,  lblB),0)
+        self.tsne_embeddingsB = torch.cat((self.tsne_embeddingsB, featCycleB.detach().cpu()), 0)
+        #labels_B = torch.cat((labels_B, lblCycleB),0)
 
-        tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
-        tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
-        labels_A = torch.cat((lblA, lblCycleA), 0)
-        labels_B = torch.cat((lblB, lblCycleB), 0)
         
         
         print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
-        print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
-        print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
+        print("embedings shape:", self.tsne_embeddingsA.shape, self.tsne_embeddingsB.shape)
 
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
@@ -241,8 +246,8 @@ class CycleGANModel(BaseModel):
         print("Computing TSNE_loss")
         # TSNE loss
         start_tsne = time.time()
-        self.loss_tsne_A = self.compute_tsne(tsne_embeddingsA, labels_A, "A")
-        self.loss_tsne_B = self.compute_tsne(tsne_embeddingsB, labels_B, "B")
+        self.loss_tsne_A = self.compute_tsne(self.tsne_embeddingsA)
+        self.loss_tsne_B = self.compute_tsne(self.tsne_embeddingsB)
         elapsed_tsne = time.time()
          
         

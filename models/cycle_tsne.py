@@ -13,7 +13,7 @@ if __name__ == '__main__':
 else:
     from models.utility import print_with_time as print
 
-def get_tsne(data, labels):  
+def get_tsne(data):  
     n_components = 2
     #tsne = TSNE(n_components = n_components, random_state = 0)
     #tsne_data = tsne.fit_transform(data)
@@ -22,7 +22,7 @@ def get_tsne(data, labels):
     print("Computed TSNE data has size:", tsne_data.shape)
     return tsne_data
 
-def get_tsne_sk(data, labels):
+def get_tsne_sk(data):
     n_components = 2
     print("computing TSNE for data with size:", data.shape)
     tsne = TSNE_sk(n_components = n_components, random_state = 0)

@@ -3,6 +3,11 @@
 # -*- coding: utf-8 -*-
 import torch
 
+if __name__ == '__main__':
+    from utility import print_with_time as print
+else:
+    from models.utility import print_with_time as print
+
 def get_neighb_list(image, label):
     print("----------------------getting neighbours list-------------------------")
     image = torch.squeeze(image)
@@ -90,3 +95,72 @@ def get_neighb_list(image, label):
     
     print("returning list")
     return features, labels
+
+import numpy as np
+
+
+def get_neighb_numpy_impl(image_tensor):
+  device = "cuda" if torch.cuda.is_available() else "cpu"
+  image = torch.squeeze(image_tensor).detach().cpu().numpy()
+
+  print(image.shape)
+  
+  depth, rows, columns = image.shape
+
+  print("started whatever")
+  neighbour_list = []
+  for r in range(rows):
+    for c in range(columns):
+      for d in range(depth):
+        neighbours = get_n_hop_neighbours(image, r,c,d, 2)
+        neighbour_list.append(neighbours)
+
+  print("completed numpy impl converting to tensor now")
+  neighbour_tensor = torch.from_numpy(np.array(neighbour_list)).to(device)
+  print("converted to tensor now")
+  return neighbour_tensor
+
+"""
+image is the image in which the neihbour is being computed
+r, c, d are row column and depth of the pixel for which
+the neihbours are being computed
+n is the number of hops at which neihbours need to be found n >=1
+"""
+def get_n_hop_neighbours(image, r, c, d, n):
+  rows, columns, depth = image.shape
+  value_at_pixel = image[d][r][c]
+  
+  start_row = r-n
+  end_row = r+n
+  start_column = c-n
+  end_column = c+n
+
+  neighbours = []
+
+  for row_iterator in range(start_row, end_row+1):
+    for col_iterator in range(start_column, end_column+1):
+      if row_iterator == r and col_iterator == c:
+        ## skip the pixel for which neighbours are being computed
+        continue
+      difference = 0
+      if (row_iterator >= 0 and row_iterator < rows and col_iterator >= 0 and col_iterator < columns):
+              difference = abs(value_at_pixel - image[d][row_iterator][col_iterator])
+      
+      neighbours.append(difference)
+
+  return neighbours
+
+
+if __name__ == "__main__":
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("started")
+    real = torch.tensor([[1],]).to(device)
+    fake = torch.tensor([[0],]).to(device)
+    data0 = torch.rand(1, 256,256,3).to(device)
+    print("calling get neighbours")
+    val = get_neighb_numpy_impl(data0)
+    print(val.shape)
+    print("done with get neighbours")
+    
+
+    
