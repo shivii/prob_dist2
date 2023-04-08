@@ -37,6 +37,9 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
         parser.add_argument('--sigma', type=float, default=0.5, help="standard deviation for uniform distribution")
         parser.add_argument('--kernel', type=int, default=5, help="kernel size for computing neighbours (for 2 hop kernel size 5)")
+        parser.add_argument('--cycleloss', type=bool, default=True, help="cycle loss is included in loss function")
+        parser.add_argument('--klloss', type=bool, default=True, help="kl divergence loss is included in loss function")
+        parser.add_argument('--advloss', type=bool, default=True, help="adverserial loss is included in loss function")
 
         self.isTrain = True
         return parser
