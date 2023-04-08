@@ -184,7 +184,7 @@ class CycleGANModel(BaseModel):
         self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True)
         # Forward cycle loss || G_B(G_A(A)) - A||
 
-        if opt.cycleloss:
+        if opt.cycleloss is not 0:
             # Forward cycle loss || G_B(G_A(A)) - A||
             self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
             # Backward cycle loss || G_A(G_B(B)) - B||
@@ -197,10 +197,14 @@ class CycleGANModel(BaseModel):
         
         #print("Computing KL Divergence_loss")
         ## KL divergence computation
-        div_A = get_divergence(self.real_A, self.fake_A, opt.sigma, opt.kernel).mean()
-        div_B = get_divergence(self.real_B, self.fake_B, opt.sigma, opt.kernel).mean()
-        self.loss_kl_A = div_A * lambda_A
-        self.loss_kl_B = div_B * lambda_B
+        if opt.klloss is not 0:
+            div_A = get_divergence(self.real_A, self.fake_A, opt.sigma, opt.kernel).mean()
+            div_B = get_divergence(self.real_B, self.fake_B, opt.sigma, opt.kernel).mean()
+            self.loss_kl_A = div_A * lambda_A
+            self.loss_kl_B = div_B * lambda_B
+        else :
+            self.loss_kl_A = 0
+            self.loss_kl_B = 0
       
         #print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
         # combined loss and calculate gradients
