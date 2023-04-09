@@ -224,6 +224,10 @@ class CycleGANModel(BaseModel):
             self.loss_G_A = 2 * js_div_A_B - log(4)
             self.loss_G_B = 2 * js_div_B_A - log(4)
 
+        """print both GAN loss:"""
+        print("GAN loss:", self.loss_G_A, self.loss_G_B)
+
+
         """Cycle Loss"""
         if opt.cycleloss != 0:
             # Forward cycle loss || G_B(G_A(A)) - A||
@@ -247,6 +251,8 @@ class CycleGANModel(BaseModel):
         else :
             self.loss_kl_A = 0
             self.loss_kl_B = 0
+
+        print("KL div loss:", self.loss_kl_A, self.loss_kl_A)    
       
         #print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
         # combined loss and calculate gradients
