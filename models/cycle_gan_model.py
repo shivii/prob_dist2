@@ -177,13 +177,17 @@ class CycleGANModel(BaseModel):
         else:
             self.loss_idt_A = 0
             self.loss_idt_B = 0
-
-        # GAN loss D_A(G_A(A))
-        self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
-        # GAN loss D_B(G_B(B))
-        self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True)
-        # Forward cycle loss || G_B(G_A(A)) - A||
-
+        if opt.advloss != 0:
+            # GAN loss D_A(G_A(A))
+            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
+            # GAN loss D_B(G_B(B))
+            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True)
+        else:
+            # GAN loss 
+            self.loss_G_A = get_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).mean()
+            # GAN loss
+            self.loss_G_B = get_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).mean()
+            
         if opt.cycleloss != 0:
             # Forward cycle loss || G_B(G_A(A)) - A||
             self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
@@ -198,8 +202,8 @@ class CycleGANModel(BaseModel):
         #print("Computing KL Divergence_loss")
         ## KL divergence computation
         if opt.klloss != 0:
-            div_A = get_divergence(self.real_A, self.fake_A, opt.sigma, opt.kernel).mean()
-            div_B = get_divergence(self.real_B, self.fake_B, opt.sigma, opt.kernel).mean()
+            div_A = get_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss).mean()
+            div_B = get_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).mean()
             self.loss_kl_A = div_A * lambda_A
             self.loss_kl_B = div_B * lambda_B
         else :
