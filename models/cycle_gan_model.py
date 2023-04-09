@@ -158,7 +158,7 @@ class CycleGANModel(BaseModel):
             # Combined loss and calculate gradients
             
         else:
-            loss_D_fake = 2 * js_div - log(4)
+            loss_D_fake = 2 * js_div.detach() - log(4)
 
         # Combined loss and calculate gradients
         loss_D = (loss_D_real + loss_D_fake) * 0.5
