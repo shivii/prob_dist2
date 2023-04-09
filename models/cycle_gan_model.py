@@ -160,9 +160,6 @@ class CycleGANModel(BaseModel):
         else:
             loss_D_fake_kl = 2 * js_div - log(4)
 
-        # Fake
-        pred_fake = netD(fake.detach())
-        loss_D_fake = self.criterionGAN(pred_fake, False)
         # Combined loss and calculate gradients
         loss_D = (loss_D_real + loss_D_fake) * 0.5
 
@@ -252,7 +249,7 @@ class CycleGANModel(BaseModel):
             self.loss_kl_A = 0
             self.loss_kl_B = 0
 
-        print("KL div loss:", self.loss_kl_A, self.loss_kl_A)    
+        print("KL div loss:", self.loss_kl_A, self.loss_kl_B)    
       
         #print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
         # combined loss and calculate gradients
