@@ -147,7 +147,7 @@ def get_JSdivergence(image1, image2, sigma, kernel):
 
     div_p_q = calculate_divergence_per_neighbourhood(gaussian_distribution_1.squeeze(0), m.squeeze(0))
     div_q_p = calculate_divergence_per_neighbourhood(gaussian_distribution_2.squeeze(0), m.squeeze(0))
-    jsd_p_q = 0.2 * div_p_q + 0.2 * div_q_p
+    jsd_p_q = 0.5 * div_p_q + 0.5 * div_q_p
     #print(jsd_p_q.mean())
     return jsd_p_q
 
@@ -177,8 +177,8 @@ if __name__ == '__main__':
     #print(test_is_pdf(gaussian_distribution1))
 
 
-    get_JSdivergence(input_image1, input_image2, 0.8, kernel=5)
-    #print("JS div", js_div)
+    js_div = get_JSdivergence(input_image1, input_image2, 0.8, kernel=5).mean()
+    print("JS div", js_div * 2 - math.log(4))
 
     #KL_divergence = calculate_divergence(gaussian_distribution1.squeeze(0), gaussian_distribution2.squeeze(0))
     #print("average kl divergence",KL_divergence)
