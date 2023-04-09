@@ -163,7 +163,7 @@ class CycleGANModel(BaseModel):
         # Combined loss and calculate gradients
         loss_D = (loss_D_real + loss_D_fake) * 0.5
 
-        print("loss_D_fake Original vs kl",  loss_D_fake, loss_D_fake)
+        #print("loss_D_fake Original vs kl",  loss_D_fake, loss_D_fake)
         loss_D.backward()
         return loss_D
 
@@ -249,7 +249,7 @@ class CycleGANModel(BaseModel):
             self.loss_kl_A = 0
             self.loss_kl_B = 0
 
-        print("KL div loss:", self.loss_kl_A, self.loss_kl_B)    
+        #print("KL div loss:", self.loss_kl_A, self.loss_kl_B)    
       
         #print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
         # combined loss and calculate gradients
@@ -266,7 +266,8 @@ class CycleGANModel(BaseModel):
 
         js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).mean()
         js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).mean()
-        print("js_div_AB, BA:", js_div_A_B, js_div_B_A)
+        
+        #print("js_div_AB, BA:", js_div_A_B, js_div_B_A)
 
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
