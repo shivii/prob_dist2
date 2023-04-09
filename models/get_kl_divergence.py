@@ -136,6 +136,21 @@ def get_divergence(image1, image2, sigma, kernel):
 
     return calculate_divergence_per_neighbourhood(gaussian_distribution1.squeeze(0), gaussian_distribution2.squeeze(0))
 
+def get_JSdivergence(image1, image2, sigma, kernel):
+    image_p = image1.to(torch.float32)
+    image_q = image2.to(torch.float32)
+    m = (image_p+image_q)/2
+
+    gaussian_distribution_1 = calculate_gaussian_distribution(image_p, sigma, kernel)
+    gaussian_distribution_2 = calculate_gaussian_distribution(image_q, sigma, kernel)
+    gaussian_distribution_m = calculate_gaussian_distribution(m, sigma, kernel)
+
+    div_p_q = calculate_divergence_per_neighbourhood(gaussian_distribution_1.squeeze(0), gaussian_distribution_m.squeeze)
+    div_q_p = calculate_divergence_per_neighbourhood(gaussian_distribution_2.squeeze(0), gaussian_distribution_m.squeeze)
+
+    jsd_p_q = 0.2 * div_p_q + 0.2 * div_q_p
+
+    return jsd_p_q
 
 
 
