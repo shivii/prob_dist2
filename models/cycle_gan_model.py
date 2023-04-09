@@ -158,7 +158,8 @@ class CycleGANModel(BaseModel):
             # Combined loss and calculate gradients
             
         else:
-            loss_D_fake = 2 * js_div.detach() - log(4)
+        #   loss_D_fake = 2 * js_div.detach() - log(4)
+            loss_D_fake = js_div.detach()
 
         # Combined loss and calculate gradients
         loss_D = (loss_D_real + loss_D_fake) * 0.5
@@ -218,8 +219,12 @@ class CycleGANModel(BaseModel):
         else:
             # GAN loss 
             # Loss = 2.JS(p_r || p_g) - log(4) 
-            self.loss_G_A = 2 * js_div_A_B - log(4)
-            self.loss_G_B = 2 * js_div_B_A - log(4)
+#            self.loss_G_A = 2 * js_div_A_B - log(4)
+#            self.loss_G_B = 2 * js_div_B_A - log(4)
+
+            self.loss_G_A = js_div_A_B
+            self.loss_G_B = js_div_B_A
+
 
         """print both GAN loss:"""
         #print("GAN loss:", self.loss_G_A, self.loss_G_B)
@@ -267,16 +272,25 @@ class CycleGANModel(BaseModel):
         js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).mean()
         js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).mean()
 
+        kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen).mean()
+        kl_div_B_A = get_divergence(self.fake_A, self.real_B, opt.sigmaGen, opt.kernelGen).mean()
         #print("js_div_AB, BA:", js_div_A_B, js_div_B_A)
 
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        self.backward_G(opt, js_div_A_B, js_div_B_A)             # calculate gradients for G_A and G_B
+        
+        
+        #self.backward_G(opt, js_div_A_B, js_div_B_A)             # calculate gradients for G_A and G_B
+        self.backward_G(opt, kl_div_A_B, kl_div_B_A)             # calculate gradients for G_A and G_B
+        
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
         self.optimizer_D.zero_grad()   # set D_A and D_B's gradients to zero
-        self.backward_D_A(opt, js_div_A_B)      # calculate gradients for D_A
-        self.backward_D_B(opt, js_div_B_A)      # calculate graidents for D_B
+        #self.backward_D_A(opt, js_div_A_B)      # calculate gradients for D_A
+        #self.backward_D_B(opt, js_div_B_A)      # calculate graidents for D_B
+
+        self.backward_D_A(opt, kl_div_A_B)      # calculate gradients for D_A
+        self.backward_D_B(opt, kl_div_B_A)      # calculate graidents for D_B
         self.optimizer_D.step()  # update D_A and D_B's weights
