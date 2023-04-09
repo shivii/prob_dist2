@@ -254,8 +254,8 @@ class CycleGANModel(BaseModel):
         # forward
         self.forward()      # compute fake images and reconstruction images.
 
-        js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
-        js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
+        js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).mean()
+        js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).mean()
 
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
