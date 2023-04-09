@@ -164,15 +164,15 @@ class CycleGANModel(BaseModel):
         loss_D.backward()
         return loss_D
 
-    def backward_D_A(self, opt):
+    def backward_D_A(self, opt, js_div_A_B):
         """Calculate GAN loss for discriminator D_A"""
         fake_B = self.fake_B_pool.query(self.fake_B)
-        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt, js_div)
+        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt, js_div_A_B)
 
-    def backward_D_B(self, opt):
+    def backward_D_B(self, opt, js_div_B_A):
         """Calculate GAN loss for discriminator D_B"""
         fake_A = self.fake_A_pool.query(self.fake_A)
-        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt, js_div) 
+        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt, js_div_B_A) 
         
     def backward_G(self, opt, js_div_A_B, js_div_B_A):
         """Calculate GAN loss for the discriminator
