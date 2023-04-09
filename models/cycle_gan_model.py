@@ -6,6 +6,7 @@ from . import networks
 from models.utility import print_with_time as print
 from models.get_kl_divergence import get_divergence
 from models.get_kl_divergence import get_JSdivergence
+from math import log
 ##############TSNE changes
 
 
@@ -214,8 +215,8 @@ class CycleGANModel(BaseModel):
         else:
             # GAN loss 
             # Loss = 2.JS(p_r || p_g) - log(4) 
-            self.loss_G_A = torch.tensor(2.0) * js_div_A_B - torch.log(4)
-            self.loss_G_B = torch.tensor(2.0) * js_div_B_A - torch.log(4)
+            self.loss_G_A = 2 * js_div_A_B - log(4)
+            self.loss_G_B = 2 * js_div_B_A - log(4)
 
         """Cycle Loss"""
         if opt.cycleloss != 0:
