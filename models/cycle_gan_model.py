@@ -222,7 +222,7 @@ class CycleGANModel(BaseModel):
             self.loss_G_B = 2 * js_div_B_A - log(4)
 
         """print both GAN loss:"""
-        print("GAN loss:", self.loss_G_A, self.loss_G_B)
+        #print("GAN loss:", self.loss_G_A, self.loss_G_B)
 
 
         """Cycle Loss"""
@@ -266,7 +266,7 @@ class CycleGANModel(BaseModel):
 
         js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).mean()
         js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).mean()
-        
+
         #print("js_div_AB, BA:", js_div_A_B, js_div_B_A)
 
         # G_A and G_B
