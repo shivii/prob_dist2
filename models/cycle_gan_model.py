@@ -245,9 +245,16 @@ class CycleGANModel(BaseModel):
         """KL divergence loss"""
         #print("Computing KL Divergence_loss")
         ## KL divergence computation
+        """
         if opt.klloss != 0:
             div_A = get_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss).su,()
             div_B = get_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
+            self.loss_kl_A = div_A * lambda_A
+            self.loss_kl_B = div_B * lambda_B
+        """
+        if opt.jsloss != 0:
+            div_A = get_JSdivergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
+            div_B = get_JSdivergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
             self.loss_kl_A = div_A * lambda_A
             self.loss_kl_B = div_B * lambda_B
         else :
@@ -272,8 +279,8 @@ class CycleGANModel(BaseModel):
         js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).sum()
         js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).sum()
 
-        kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen).sum()
-        kl_div_B_A = get_divergence(self.fake_A, self.real_B, opt.sigmaGen, opt.kernelGen).sum()
+        #kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen).sum()
+        #kl_div_B_A = get_divergence(self.fake_A, self.real_B, opt.sigmaGen, opt.kernelGen).sum()
         #print("js_div_AB, BA:", js_div_A_B, js_div_B_A)
 
         # G_A and G_B
