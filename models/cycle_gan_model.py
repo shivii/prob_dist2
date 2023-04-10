@@ -198,6 +198,10 @@ class CycleGANModel(BaseModel):
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
 
+        """New coefficient term for reducing large loss terms"""
+        alpha_gan = 0.01
+        appha_js = 0.01
+
         """ Identity loss """
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed: ||G_A(B) - B||
@@ -222,8 +226,8 @@ class CycleGANModel(BaseModel):
 #            self.loss_G_A = 2 * js_div_A_B - log(4)
 #            self.loss_G_B = 2 * js_div_B_A - log(4)
 
-            self.loss_G_A = js_div_A_B
-            self.loss_G_B = js_div_B_A
+            self.loss_G_A = js_div_A_B * alpha_gan
+            self.loss_G_B = js_div_B_A * alpha_gan
 
 
         """print both GAN loss:"""
@@ -257,8 +261,8 @@ class CycleGANModel(BaseModel):
             div_B = get_JSdivergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
-            self.loss_kl_A = div_A 
-            self.loss_kl_B = div_B 
+            self.loss_kl_A = div_A * alpha_gan
+            self.loss_kl_B = div_B * alpha_gan
         else :
             self.loss_kl_A = 0
             self.loss_kl_B = 0
