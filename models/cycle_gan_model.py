@@ -154,7 +154,7 @@ class CycleGANModel(BaseModel):
         if opt.advloss!=0:    
             # Fake
             pred_fake = netD(fake.detach())
-            loss_D_fake = self.criterionGAN(pred_fake, False)
+            loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
             # Combined loss and calculate gradients
             
         else:
@@ -246,8 +246,8 @@ class CycleGANModel(BaseModel):
         #print("Computing KL Divergence_loss")
         ## KL divergence computation
         if opt.klloss != 0:
-            div_A = get_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss).mean()
-            div_B = get_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).mean()
+            div_A = get_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss).su,()
+            div_B = get_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
             self.loss_kl_A = div_A * lambda_A
             self.loss_kl_B = div_B * lambda_B
         else :
@@ -269,11 +269,11 @@ class CycleGANModel(BaseModel):
         # forward
         self.forward()      # compute fake images and reconstruction images.
 
-        js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).mean()
-        js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).mean()
+        js_div_A_B = get_JSdivergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen).sum()
+        js_div_B_A = get_JSdivergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen).sum()
 
-        kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen).mean()
-        kl_div_B_A = get_divergence(self.fake_A, self.real_B, opt.sigmaGen, opt.kernelGen).mean()
+        kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen).sum()
+        kl_div_B_A = get_divergence(self.fake_A, self.real_B, opt.sigmaGen, opt.kernelGen).sum()
         #print("js_div_AB, BA:", js_div_A_B, js_div_B_A)
 
         # G_A and G_B
@@ -281,16 +281,16 @@ class CycleGANModel(BaseModel):
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
         
         
-        #self.backward_G(opt, js_div_A_B, js_div_B_A)             # calculate gradients for G_A and G_B
-        self.backward_G(opt, kl_div_A_B, kl_div_B_A)             # calculate gradients for G_A and G_B
+        self.backward_G(opt, js_div_A_B, js_div_B_A)             # calculate gradients for G_A and G_B
+        #self.backward_G(opt, kl_div_A_B, kl_div_B_A)             # calculate gradients for G_A and G_B
         
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
         self.optimizer_D.zero_grad()   # set D_A and D_B's gradients to zero
-        #self.backward_D_A(opt, js_div_A_B)      # calculate gradients for D_A
-        #self.backward_D_B(opt, js_div_B_A)      # calculate graidents for D_B
+        self.backward_D_A(opt, js_div_A_B)      # calculate gradients for D_A
+        self.backward_D_B(opt, js_div_B_A)      # calculate graidents for D_B
 
-        self.backward_D_A(opt, kl_div_A_B)      # calculate gradients for D_A
-        self.backward_D_B(opt, kl_div_B_A)      # calculate graidents for D_B
+        #self.backward_D_A(opt, kl_div_A_B)      # calculate gradients for D_A
+        #self.backward_D_B(opt, kl_div_B_A)      # calculate graidents for D_B
         self.optimizer_D.step()  # update D_A and D_B's weights
