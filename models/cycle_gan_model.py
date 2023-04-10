@@ -79,6 +79,10 @@ class CycleGANModel(BaseModel):
         else:  # during test time, only load Gs
             self.model_names = ['G_A', 'G_B']
 
+        """New coefficient term for reducing large loss terms"""
+        self.alpha_gan = 0.01
+        self.alpha_js = 0.01
+
         # define networks (both Generators and discriminators)
         # The naming is different from those used in the paper.
         # Code (vs. paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
@@ -159,7 +163,7 @@ class CycleGANModel(BaseModel):
             
         else:
         #   loss_D_fake = 2 * js_div.detach() - log(4)
-            loss_D_fake = js_div.detach()
+            loss_D_fake = js_div.detach() * self.alpha_gan
 
         # Combined loss and calculate gradients
         loss_D = (loss_D_real + loss_D_fake) * 0.5
@@ -198,9 +202,7 @@ class CycleGANModel(BaseModel):
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
 
-        """New coefficient term for reducing large loss terms"""
-        alpha_gan = 0.01
-        appha_js = 0.01
+
 
         """ Identity loss """
         if lambda_idt > 0:
@@ -226,8 +228,8 @@ class CycleGANModel(BaseModel):
 #            self.loss_G_A = 2 * js_div_A_B - log(4)
 #            self.loss_G_B = 2 * js_div_B_A - log(4)
 
-            self.loss_G_A = js_div_A_B * alpha_gan
-            self.loss_G_B = js_div_B_A * alpha_gan
+            self.loss_G_A = js_div_A_B * self.alpha_gan
+            self.loss_G_B = js_div_B_A * self.alpha_gan
 
 
         """print both GAN loss:"""
@@ -261,8 +263,8 @@ class CycleGANModel(BaseModel):
             div_B = get_JSdivergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
-            self.loss_kl_A = div_A * alpha_gan
-            self.loss_kl_B = div_B * alpha_gan
+            self.loss_kl_A = div_A * self.alpha_js
+            self.loss_kl_B = div_B * self.alpha_js
         else :
             self.loss_kl_A = 0
             self.loss_kl_B = 0
