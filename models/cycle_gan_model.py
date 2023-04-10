@@ -255,8 +255,10 @@ class CycleGANModel(BaseModel):
         if opt.jsloss != 0:
             div_A = get_JSdivergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
             div_B = get_JSdivergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
-            self.loss_kl_A = div_A * lambda_A
-            self.loss_kl_B = div_B * lambda_B
+            #self.loss_kl_A = div_A * lambda_A
+            #self.loss_kl_B = div_B * lambda_B
+            self.loss_kl_A = div_A 
+            self.loss_kl_B = div_B 
         else :
             self.loss_kl_A = 0
             self.loss_kl_B = 0
