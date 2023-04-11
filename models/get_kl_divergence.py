@@ -137,7 +137,20 @@ def get_divergence(image1, image2, sigma, kernel):
     return calculate_divergence_per_neighbourhood(gaussian_distribution1.squeeze(0), gaussian_distribution2.squeeze(0))
 
 
+def get_JSdivergence(image1, image2, sigma, kernel):
+    image_p = image1.to(torch.float32)
+    image_q = image2.to(torch.float32)
 
+    gaussian_distribution_1 = calculate_gaussian_distribution(image_p, sigma, kernel)
+    gaussian_distribution_2 = calculate_gaussian_distribution(image_q, sigma, kernel)
+
+    m = (gaussian_distribution_1 + gaussian_distribution_2)/2
+
+    div_p_m = calculate_divergence_per_neighbourhood(gaussian_distribution_1.squeeze(0), m.squeeze(0))
+    div_q_m = calculate_divergence_per_neighbourhood(gaussian_distribution_2.squeeze(0), m.squeeze(0))
+    js_div = 0.5 * div_p_m + 0.5 * div_q_m
+
+    return js_div
 
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"

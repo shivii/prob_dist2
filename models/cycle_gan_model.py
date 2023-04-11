@@ -5,6 +5,7 @@ from .base_model import BaseModel
 from . import networks
 from models.utility import print_with_time as print
 from models.get_kl_divergence import get_divergence
+from models.get_kl_divergence import get_JSdivergence
 ##############TSNE changes
 
 
@@ -198,10 +199,10 @@ class CycleGANModel(BaseModel):
         #print("Computing KL Divergence_loss")
         ## KL divergence computation
         if opt.klloss != 0:
-            div_A = get_divergence(self.real_A, self.fake_A, opt.sigma, opt.kernel).mean()
-            div_B = get_divergence(self.real_B, self.fake_B, opt.sigma, opt.kernel).mean()
-            self.loss_kl_A = div_A * lambda_A
-            self.loss_kl_B = div_B * lambda_B
+            div_A = get_JSdivergence(self.real_A, self.fake_A, opt.sigma, opt.kernel).sum()
+            div_B = get_JSdivergence(self.real_B, self.fake_B, opt.sigma, opt.kernel).sum()
+            self.loss_kl_A = div_A * (1/256)
+            self.loss_kl_B = div_B * (1/256)
         else :
             self.loss_kl_A = 0
             self.loss_kl_B = 0
