@@ -35,11 +35,13 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--pool_size', type=int, default=50, help='the size of image buffer that stores previously generated images')
         parser.add_argument('--lr_policy', type=str, default='linear', help='learning rate policy. [linear | step | plateau | cosine]')
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
-        parser.add_argument('--sigma', type=float, default=0.5, help="standard deviation for uniform distribution")
-        parser.add_argument('--kernel', type=int, default=5, help="kernel size for computing neighbours (for 2 hop kernel size 5)")
+        parser.add_argument('--sigmaGen', type=float, default=0.5, help="standard deviation for uniform distribution")
+        parser.add_argument('--sigmaCycleloss', type=float, default=0.5, help="standard deviation for uniform distribution")
+        parser.add_argument('--kernelGen', type=int, default=5, help="kernel size for computing neighbours (for 2 hop kernel size 5)")
+        parser.add_argument('--kernelCycleloss', type=int, default=3, help="kernel size for computing neighbours (for 2 hop kernel size 5)")
         parser.add_argument('--cycleloss', type=int, default=1, help="cycle loss is excluded in loss function if passed 0")
         parser.add_argument('--klloss', type=int, default=1, help="kl divergence loss is excluded in loss function if passed 0")
+        parser.add_argument('--jsloss', type=int, default=1, help="kl divergence loss is excluded in loss function if passed 0")
         parser.add_argument('--advloss', type=int, default=1, help="adverserial loss is excluded in loss function if passed 0")
-
         self.isTrain = True
         return parser
