@@ -158,11 +158,15 @@ class CycleGANModel(BaseModel):
         pred_fake = netD(fake.detach())
         loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
         # Combined loss and calculate gradients
-        
-        div_js = js_div.detach() * self.alpha_js
+
+        if opt.advloss == 0:
+            div_js = js_div.detach() * self.alpha_js
+            loss_D = (loss_D_real + loss_D_fake) * 0.5 + div_js
+        else:
+            loss_D = (loss_D_real + loss_D_fake)
 
         # Combined loss and calculate gradients
-        loss_D = (loss_D_real + loss_D_fake) * 0.5 + div_js
+        
 
         #print("loss_D_fake Original vs kl",  loss_D_fake, loss_D_fake)
         loss_D.backward()
