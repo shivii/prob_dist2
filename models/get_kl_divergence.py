@@ -131,8 +131,9 @@ def batch_histogram(data_tensor, num_classes=-1):
         containing histograms of the last dimension D_n of tensor,
         that is, result[d_1,...,d_{n-1}, c] = number of times c appears in tensor[d_1,...,d_{n-1}].
     """
-
+    print("data tensor  shape:", data_tensor.shape)
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
+    print("batch_hist:", batch_hist.shape)
     min = data_tensor.min()
     max = data_tensor.max()
     print("min max", min, max)
