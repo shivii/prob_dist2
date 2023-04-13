@@ -41,14 +41,48 @@ def get_rgb(image):
     return image_r, image_g, image_b
 
 def get_hist(img, bins):
-    neigh_hist = torch.zeros(0,bins)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    neigh_hist = torch.zeros(0,bins).to(device)
     img_r, img_c = img.shape
-    for i in range(img_r):
+    for i in range(1550,1554):
         hist_r = img[i, :]
-        hist = torch.histc(hist_r, bins = bins, min=0, max=255).cpu()
-        #print(hist.shape)
-        neigh_hist = torch.cat((neigh_hist.cpu(), hist.unsqueeze(0)), 0)
+        hist = torch.histc(hist_r, bins = bins, min=0, max=255)
+        neigh_hist = torch.cat((neigh_hist, hist.unsqueeze(0)), 0)
     return neigh_hist    
+
+
+
+def get_pdf(tensor, sigma):
+    hist_squared = torch.pow(tensor, 2) 
+    normalised_with_sigma = hist_squared/(2*sigma*sigma)
+    gaussian_space = torch.exp(-normalised_with_sigma).unsqueeze(0)
+    #print_with_time("gaussian space", gaussian_space.shape)
+    
+    gaussian_nieghbourhood_sums = gaussian_space.sum(dim=2)
+    gaussian_nieghbourhood_sums_repeated = gaussian_nieghbourhood_sums.unsqueeze(2)
+    gaussian_distribution = gaussian_space/gaussian_nieghbourhood_sums_repeated
+
+    print(gaussian_distribution.shape)
+
+    return gaussian_distribution
+
+
+def hist_divergence(image1, image2, sigma, kernel, bins):
+    #step1 get images as floats
+    image_p = image1.to(torch.float32)
+    image_q = image2.to(torch.float32)
+
+    calculate_probability_distribution_histogram(image_p, sigma, kernel, bins) 
+
+    #step2 get pdf of histograms of neighbours
+    #hist_p = calculate_probability_distribution_histogram(image_p, sigma, kernel, bins)   
+    #hist_q = calculate_probability_distribution_histogram(image_q, sigma, kernel, bins)
+    #print("hist shape:", hist_p.shape, hist_q.shape)
+
+    #step3 get JS Divergence
+    #div = get_JSDiv(hist_p, hist_q, bins)
+
+    #return div
 
 def calculate_probability_distribution_histogram(image, sigma, kernel, bins):
     #print("gaussian begin")
@@ -57,42 +91,65 @@ def calculate_probability_distribution_histogram(image, sigma, kernel, bins):
 
     # step1 get the nieghbours for each channel
     neigh = get_neigh(image, kernel, padding).squeeze(0)
-    print_with_time("neighbour shapes", neigh.shape)
+    #print_with_time("neighbour shapes", neigh[1000])
 
     # step2 get histogran of neighbours
-    hist = get_hist(neigh, bins)    
-    print_with_time("histogram shapes", hist.shape)
+    hist = batch_histogram(neigh.long())    
+    hist_avg = hist.sum(1)/hist.count_nonzero(dim=1)
+    print("sum", hist_avg.shape)
+    repeat_hist_avg = hist_avg.unsqueeze(1).repeat(1,256)
+    diff_avg = (hist - repeat_hist_avg)/repeat_hist_avg
+    diff_avg[diff_avg==-1] = 0
+    diff_avg = diff_avg * repeat_hist_avg
+    print("diff avg:", diff_avg.shape)
+    hist_gaussian = torch.exp(-torch.pow(diff_avg, 2)/ (2 * sigma * sigma))
+    """remove 1's from hist_gaussian as these represent 0's which are not part of sample space"""
+    hist_gaussian[hist_gaussian==1] = 0
+    print("hist_gaussian", hist_gaussian[0])
+    gaussian_hist_sums = hist_gaussian.sum(dim=1)
+    gaussian_hist_sums_repeated = gaussian_hist_sums.unsqueeze(1)
+    gaussian_distribution = hist_gaussian/gaussian_hist_sums_repeated
+
+    print(gaussian_distribution[0])
+
 
     # step3 get PDF
-    squared_sum = torch.pow(hist, 2) 
-    sum_normalised_with_sigma = squared_sum/(2*sigma*sigma)
-    gaussian_space = torch.exp(-sum_normalised_with_sigma).unsqueeze(0)
-    print_with_time("gaussian space", gaussian_space.shape)
-    
-    gaussian_nieghbourhood_sums = gaussian_space.sum(dim=2)
-    gaussian_nieghbourhood_sums_repeated = gaussian_nieghbourhood_sums.unsqueeze(2)
-    gaussian_distribution = gaussian_space/gaussian_nieghbourhood_sums_repeated
+    #pdf = get_pdf(hist, sigma)
 
-    print(gaussian_distribution.shape)
-    
-    return gaussian_distribution
+    #step4
+    #return pdf
 
-def hist_divergence(image1, image2, sigma, kernel, bins):
-    #step1 get images as floats
-    image_p = image1.to(torch.float32)
-    image_q = image2.to(torch.float32)
+def batch_histogram(data_tensor, num_classes=-1):
+    """
+    Computes histograms of integral values, even if in batches (as opposed to torch.histc and torch.histogram).
+    Arguments:
+        data_tensor: a D1 x ... x D_n torch.LongTensor
+        num_classes (optional): the number of classes present in data.
+                                If not provided, tensor.max() + 1 is used (an error is thrown if tensor is empty).
+    Returns:
+        A D1 x ... x D_{n-1} x num_classes 'result' torch.LongTensor,
+        containing histograms of the last dimension D_n of tensor,
+        that is, result[d_1,...,d_{n-1}, c] = number of times c appears in tensor[d_1,...,d_{n-1}].
+    """
 
-    #step2 get pdf of histograms of neighbours
-    hist_p = calculate_probability_distribution_histogram(image_p, sigma, kernel, bins)
-    hist_q = calculate_probability_distribution_histogram(image_q, sigma, kernel, bins)
-    print("hist shape:", hist_p.shape, hist_q.shape)
-    
+    batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
+    min = data_tensor.min()
+    max = data_tensor.max()
+    if min == 0 and max ==255:
+        return batch_hist
+    else:
+        padding_left = min - 0
+        padding_right = 255 - max
+        return F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
+
+
+def get_JSDiv(image1, image2, bins):
     # for any pdf A, adding epsilon avoids 0's in the tensor A
     # to counter the addition of epsilon,
     # (A + epsilon )* 1/ 1+n*epsilon 
     epsilon = 1e-20
-    real_tensor = (hist_p + epsilon) * (1/(1 + bins * epsilon))
-    fake_tensor = (hist_q + epsilon) * (1/(1 + bins * epsilon))
+    real_tensor = (image1 + epsilon) * (1/(1 + bins * epsilon))
+    fake_tensor = (image2 + epsilon) * (1/(1 + bins * epsilon))
 
     # step4 joint distribution of 2 tensors
     m = (real_tensor + fake_tensor)/2
@@ -101,20 +158,83 @@ def hist_divergence(image1, image2, sigma, kernel, bins):
     kl_real_fake = (real_tensor) * ((real_tensor)/(m)).log()
     kl_fake_real = (fake_tensor) * ((fake_tensor)/(m)).log()
 
-    get_details(kl_real_fake,"kl_divergence_elements")
+    #get_details(kl_real_fake,"kl_divergence_elements")
 
     kl_per_pixel_real_fake = kl_real_fake.sum(dim=1)
     kl_per_pixel_real_fake[kl_per_pixel_real_fake < 0] = 0
+    #get_details(kl_per_pixel_real_fake,"kl_per_pixel_real_fake")
 
     kl_per_pixel_fake_real = kl_fake_real.sum(dim=1)
     kl_per_pixel_fake_real[kl_per_pixel_fake_real < 0] = 0
+    #get_details(kl_per_pixel_fake_real,"kl_per_pixel_fake_real")
+
 
     js_div = 0.5 * kl_per_pixel_real_fake + 0.5 * kl_per_pixel_fake_real
 
-    print("js_div", js_div.mean())
-    #return kl_divergence_per_pixel
+    #print("js_div", js_div.mean())
+    return js_div
 
 
+
+def calculate_probability_distribution_simple(image, sigma, kernel, bins):
+    # get r,g,b components
+    r, g, b = get_rgb(image)
+
+    # get kernel size and padding
+    no_of_neigh = kernel*kernel
+    padding = math.floor(kernel/2)
+
+    # get the nieghbours for each channel
+    neigh_r = get_neigh(r, kernel, padding).squeeze(0)
+    neigh_g = get_neigh(g, kernel, padding).squeeze(0)
+    neigh_b = get_neigh(b, kernel, padding).squeeze(0)
+    #print_with_time("neighbour shapes", neigh_r[0])
+
+    # get histogram of neighbours
+    hist_r = batch_histogram(neigh_r.long()) 
+    hist_g = batch_histogram(neigh_g.long()) 
+    hist_b = batch_histogram(neigh_b.long()) 
+    #print("histogram shape:", hist_r[0])
+
+    #getting sum along dim 2
+    neigh_r_sum = hist_r.sum(1)
+    neigh_g_sum = hist_g.sum(1)
+    neigh_b_sum = hist_b.sum(1)
+    #print("sum shape:", neigh_r_sum.shape)
+
+    #repeat the sum values along every dim
+    neigh_r_repeat = neigh_r_sum.unsqueeze(1).repeat(1, 256)
+    neigh_g_repeat = neigh_g_sum.unsqueeze(1).repeat(1, 256)
+    neigh_b_repeat = neigh_b_sum.unsqueeze(1).repeat(1, 256)
+    #print("neigh sum size:", neigh_r_repeat[0])
+
+    # probability = current value/sum
+    prob_r = hist_r / neigh_r_repeat
+    prob_g = hist_g / neigh_g_repeat
+    prob_b = hist_b / neigh_b_repeat
+    #print("prob size:", prob_r.shape)
+
+    return prob_r, prob_g, prob_b
+    
+def pdf_divergence(image1, image2, sigma, kernel, bins):
+    #step1 get images as floats
+    image_p = image1.to(torch.float32)
+    image_q = image2.to(torch.float32)
+
+    #get probabilities of images for different channels
+    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel, bins) 
+    prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel, bins) 
+
+    #get JS Divergence
+    div_r = get_JSDiv(prob1_r, prob2_r, bins)
+    div_g = get_JSDiv(prob1_g, prob2_g, bins)
+    div_b = get_JSDiv(prob1_b, prob2_b, bins)
+
+    div = div_r.mean() + div_g.mean() + div_b.mean()
+
+    return div
+    
+    
 """
 n is the number of repetitions
 """
@@ -122,129 +242,10 @@ def get_flattened_and_repeated(t, n):
     #print("genrating a flattened and repeated tensor")
     return torch.flatten(t).unsqueeze(1).repeat(1,1,n)
 
-
-def calculate_gaussian_distribution(image, sigma, kernel):
-    #print("gaussian begin")
-
-    no_of_neigh = kernel*kernel
-    padding = math.floor(kernel/2)
-
-    # step1 get r g b seperately for the image
-    r,g,b = get_rgb(image)
-
-    # step2 get the nieghbours for each channel
-    neigh_r = get_neigh(r, kernel, padding)
-    neigh_g = get_neigh(g, kernel, padding)
-    neigh_b = get_neigh(b, kernel, padding)
-
-    # step3 build flattened repeated rgb tensor
-    repeated_r = get_flattened_and_repeated(r,no_of_neigh)
-    repeated_g = get_flattened_and_repeated(g,no_of_neigh)
-    repeated_b = get_flattened_and_repeated(b,no_of_neigh)
-
-    # step4: Xi - Xj i.e : subtract repeated_r and neigh_r
-
-    diff_r = neigh_r - repeated_r
-    diff_g = neigh_g - repeated_g
-    diff_b = neigh_b - repeated_b
-
-    diff_squared_sum = torch.pow(diff_r, 2) + torch.pow(diff_g, 2) + torch.pow(diff_b, 2)
-    #normalised_diff_squared_sum = torch.nn.functional.normalize(diff_squared_sum, p=2.0, dim=1)
-    
-    sum_normalised_with_sigma = diff_squared_sum/(2*sigma*sigma)
-    gaussian_space = torch.exp(-sum_normalised_with_sigma)
-    gaussian_nieghbourhood_sums = gaussian_space.sum(dim=2)
-    gaussian_nieghbourhood_sums_repeated = gaussian_nieghbourhood_sums.unsqueeze(2)
-    gaussian_distribution = gaussian_space/gaussian_nieghbourhood_sums_repeated
-    return gaussian_distribution
-
-"""
-Predefined method of Pytorch
-"""
-
-def calculate_divergence(real, fake):
-    #get_details(real, "real")
-    #get_details(fake, "fake")
-    kl_loss = nn.KLDivLoss(reduction="batchmean")
-    output = kl_loss(fake, real)
-    return output
-
-"""
-Computing kl divergence of respective neighbours of real and fake images
-"""
-
-def calculate_divergence_per_neighbourhood(real, fake):
-    epsilon = 1e-20
-    real_tensor = real + epsilon
-    fake_tensor = fake + epsilon
-    #print("epsilon is ", epsilon)
-    kl_divergence_elements = (fake_tensor) * ((fake_tensor)/(real_tensor)).log()
-    #get_details(kl_divergence_elements,"kl_divergence_elements")
-    kl_divergence_per_pixel = kl_divergence_elements.sum(dim=1)
-    kl_divergence_per_pixel[kl_divergence_per_pixel < 0] = 0
-
-    return kl_divergence_per_pixel
-
 def get_details(t, label):
     print(label, " shape ", t.shape)
     print(label, " minimum ", t.min())
     print(label, " maximum ", t.max())
-
-def plot(t, label):
-    max = 255
-    min = 0
-    dataset = torch.flatten(t).cpu()
-    hist = torch.histc(dataset, bins = 255, min=min, max=max)
-
-    x = range(100)
-    plt.bar(x, hist, align='center')
-    plt.xlabel(label)
-    plt.show()
-
-"""
-kl divergence is used for computing the differnce between 2 probability distributions !
-A probability distribution should have summation = 1 other wise its not a probability distribution.
-so this needs to be neccessarily checked.
-"""
-
-def test_is_pdf(t):
-    sumt = t.sum(dim=2)
-    get_details(sumt, "sumt")
-    return torch.all(sumt == 1, dim=1)
-
-
-def get_divergence(image1, image2, sigma, kernel):
-    image1 = image1.to(torch.float32)
-    image2 = image2.to(torch.float32)
-    gaussian_distribution1 = calculate_gaussian_distribution(image1, sigma, kernel)
-    gaussian_distribution2 = calculate_gaussian_distribution(image2, sigma, kernel)
-
-    return calculate_divergence_per_neighbourhood(gaussian_distribution1.squeeze(0), gaussian_distribution2.squeeze(0))
-
-def get_JSdivergence(image1, image2, sigma, kernel):
-    image_p = image1.to(torch.float32)
-    image_q = image2.to(torch.float32)
-
-    gaussian_distribution_1 = calculate_gaussian_distribution(image_p, sigma, kernel)
-    gaussian_distribution_2 = calculate_gaussian_distribution(image_q, sigma, kernel)
-
-    m = (gaussian_distribution_1 + gaussian_distribution_2)/2
-
-    div_p_m = calculate_divergence_per_neighbourhood(gaussian_distribution_1.squeeze(0), m.squeeze(0))
-    div_q_m = calculate_divergence_per_neighbourhood(gaussian_distribution_2.squeeze(0), m.squeeze(0))
-    js_div = 0.5 * div_p_m + 0.5 * div_q_m
-
-    return js_div
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -263,66 +264,12 @@ if __name__ == '__main__':
     input_image3 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1920_real_A.png")).to(device).unsqueeze(0).to(torch.float32)
     input_image4 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1920_rec_A.png")).to(device).unsqueeze(0).to(torch.float32)
 
-    hist_divergence(input_image3,input_image4, 1, kernel=3, bins=30)
+    input_image5 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02381460_489.jpg")).to(device).unsqueeze(0).to(torch.float32)
+    input_image6 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02391049_87.jpg")).to(device).unsqueeze(0).to(torch.float32)
 
-    """
-    #gaussian_distribution1 = calculate_gaussian_distribution(input_image1, 0.1, kernel=5)
-    #gaussian_distribution2 = calculate_gaussian_distribution(input_image2, 0.1, kernel=5)
 
-    #gaussian_distribution3 = calculate_gaussian_distribution(input_image3, 0.1, kernel=5)
-    #gaussian_distribution4 = calculate_gaussian_distribution(input_image4, 0.1, kernel=5)
-    #print(test_is_pdf(gaussian_distribution1))
-    #print(test_is_pdf(gaussian_distribution1))
+    print(pdf_divergence(input_image1,input_image1, sigma=1, kernel=3, bins=255))
 
     
 
-    kl_div = get_divergence(input_image1, input_image1, 0.8, kernel=5)
-    exp = 0.5
-    js_div = get_JSdivergence(input_image1, input_image1, 0.8, kernel=5)
-
-    loss_g = kl_div - 2*js_div + math.log(4) + exp
-    print(kl_div.mean())
-    print("loss", loss_g.mean())
-    print("JS div", (js_div * 2 - math.log(4)).mean())
-    
-    #KL_divergence = calculate_divergence(gaussian_distribution1.squeeze(0), gaussian_distribution2.squeeze(0))
-    #print("average kl divergence",KL_divergence)
-    #divergence_per_neighbourhood_1 = calculate_divergence_per_neighbourhood(gaussian_distribution1.squeeze(0), gaussian_distribution2.squeeze(0))
-    #divergence_per_neighbourhood_2 = calculate_divergence_per_neighbourhood(gaussian_distribution2.squeeze(0), gaussian_distribution1.squeeze(0))
-    #print("average kl divergence 1 ", (divergence_per_neighbourhood_1.mean()), (divergence_per_neighbourhood_2.mean()))
-    
-    #KL_divergence = calculate_divergence(gaussian_distribution3.squeeze(0), gaussian_distribution4.squeeze(0))
-    #print("average kl divergence",KL_divergence)
-    #divergence_per_neighbourhood_1 = calculate_divergence_per_neighbourhood(gaussian_distribution3.squeeze(0), gaussian_distribution4.squeeze(0))
-    #divergence_per_neighbourhood_2 = calculate_divergence_per_neighbourhood(gaussian_distribution4.squeeze(0), gaussian_distribution3.squeeze(0))
-    #print("average kl divergence 2 ", (divergence_per_neighbourhood_1.mean()), (divergence_per_neighbourhood_2.mean()))
-
-
-    
-    #get_details(divergence_per_neighbourhood, "divergence_per_neighbourhood")
-    diver_numpy = divergence_per_neighbourhood.cpu().numpy()
-    gaussian_numpy1 = gaussian_distribution1.cpu().numpy()
-    gaussian_numpy2 = gaussian_distribution2.cpu().numpy()
-    #print(gaussian_numpy1.shape)
-    #print(gaussian_numpy2.shape)
-
-    
-    count_of_neg=0
-    list_of_neg = []
-    for i in range(len(diver_numpy)):
-        if diver_numpy[i] < 0:
-            count_of_neg = count_of_neg + 1
-    #        print("divergence is:", diver_numpy[i])
-    #        print("gaussian1:", gaussian_distribution1[0][i])
-    #        print("gaussian2:", gaussian_distribution2[0][i])
-
-    #print("count:", count_of_neg)
-    #print("average kl divergence", divergence_per_neighbourhood.mean())
-    
-
-
-
-kl divergence is used for computing the differnce between 2 probability distributions !
-A probability distribution should have summation = 1 other wise its not a probability distribution.
-so this needs to be neccessarily checked.
-"""
+ 
