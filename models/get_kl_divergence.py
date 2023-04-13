@@ -232,18 +232,16 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     return prob_r, prob_g, prob_b
     
 def pdf_divergence(image1, image2, sigma, kernel):
-    #step1 get images as floats
-    image_p = image1.to(torch.float32)
-    image_q = image2.to(torch.float32)
-    print("min max for image_p after converting to float", image_p.min(), image_p.max())
-    print("min max for image_q after converting to float", image_q.min(), image_q.max())
+    """
+    Denormalize image
+    """
+    image_p = denorm(image1).unsqueeze(0).to(float)
+    image_q = denorm(image2).unsqueeze(0).to(float)
+    print("image shape:", image_p.shape)
 
     #get probabilities of images for different channels
-    print("calculating probablility for image_p")
     prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel)
-    print("calculating probablility for image_q")
     prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel) 
-    print("prob shape:",prob1_r.shape, prob1_g.shape, prob1_b.shape)
 
     #get JS Divergence
     div_r = get_JSDiv(prob1_r, prob2_r)
@@ -267,29 +265,41 @@ def get_details(t, label):
     print(label, " minimum ", t.min())
     print(label, " maximum ", t.max())
 
+def denorm(image):
+    device = image.get_device()
+    # getting the values into range [0,1] from [-1, 1] : denormazlizing
+    image = image.squeeze(0) * 0.5 + 0.5
+
+    # converting toTensor to toPIL image
+    
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.PILToTensor()
+        ])
+    image = transform(image).to(device)
+
+    return image
 
 
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(device)
     print(torch.cuda.get_device_properties(0))
     torch.set_printoptions(threshold=100000)
 
-    transform = transforms.Compose([
-    transforms.PILToTensor()
-    ])
-
-    input_image1 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1160_real_B.png")).to(device).unsqueeze(0).to(torch.float32)
-    input_image2 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1160_rec_B.png")).to(device).unsqueeze(0).to(torch.float32)
-
-    input_image3 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1920_real_A.png")).to(device).unsqueeze(0).to(torch.float32)
-    input_image4 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1920_rec_A.png")).to(device).unsqueeze(0).to(torch.float32)
-
-    input_image5 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02381460_489.jpg")).to(device).unsqueeze(0).to(torch.float32)
-    input_image6 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02391049_87.jpg")).to(device).unsqueeze(0).to(torch.float32)
+    input_image1 = Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1160_real_B.png")
+    input_image2 = Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1160_rec_B.png")
 
 
-    print(pdf_divergence(input_image3,input_image4, sigma=1, kernel=5))
+    """
+    Normalise image
+    """
+    trans = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                ])
+    image1 = trans(input_image1).to(device)
+    image2 = trans(input_image2).to(device)
+    print(pdf_divergence(image1.unsqueeze(0),image2.unsqueeze(0), sigma=1, kernel=5))
 
     
 
