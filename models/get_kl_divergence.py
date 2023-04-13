@@ -110,7 +110,7 @@ def calculate_probability_distribution_histogram(image, sigma, kernel, bins):
     gaussian_hist_sums_repeated = gaussian_hist_sums.unsqueeze(1)
     gaussian_distribution = hist_gaussian/gaussian_hist_sums_repeated
 
-    print(gaussian_distribution[0])F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
+    print(gaussian_distribution[0])
 
 
     # step3 get PDF
