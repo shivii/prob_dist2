@@ -220,6 +220,7 @@ def pdf_divergence(image1, image2, sigma, kernel):
     #step1 get images as floats
     image_p = image1.to(torch.float32)
     image_q = image2.to(torch.float32)
+    print(image_p.shape)
 
     #get probabilities of images for different channels
     prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel) 
