@@ -131,23 +131,17 @@ def batch_histogram(data_tensor, num_classes=-1):
         containing histograms of the last dimension D_n of tensor,
         that is, result[d_1,...,d_{n-1}, c] = number of times c appears in tensor[d_1,...,d_{n-1}].
     """
-    print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
-    print("data tensor  shape:", data_tensor.shape)
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
-    print("batch_hist:", batch_hist.shape)
     min = data_tensor.min()
     max = data_tensor.max()
-    print("min max", min, max)
     if min == 0 and max == 255:
         print(batch_hist.shape)
-        print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
         return batch_hist
     else:
         padding_left = min - 0
         padding_right = 255 - max
         batch_hist = F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
         print(batch_hist.shape)
-        print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
         return batch_hist
     
 
@@ -188,7 +182,6 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     r, g, b = get_rgb(image)
 
     # get kernel size and padding
-    no_of_neigh = kernel*kernel
     padding = math.floor(kernel/2)
 
     # get the nieghbours for each channel
@@ -200,25 +193,21 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     hist_r = batch_histogram(neigh_r.long())
     hist_g = batch_histogram(neigh_g.long()) 
     hist_b = batch_histogram(neigh_b.long()) 
-    print("histogram shape:", hist_r.shape)
 
     #getting sum along dim 2
     neigh_r_sum = hist_r.sum(1)
     neigh_g_sum = hist_g.sum(1)
     neigh_b_sum = hist_b.sum(1)
-    print("sum shape:", neigh_r_sum.shape)
 
     #repeat the sum values along every dim
     neigh_r_repeat = neigh_r_sum.unsqueeze(1).repeat(1, 256)
     neigh_g_repeat = neigh_g_sum.unsqueeze(1).repeat(1, 256)
     neigh_b_repeat = neigh_b_sum.unsqueeze(1).repeat(1, 256)
-    print("neigh sum size:", neigh_r_repeat.shape)
 
     # probability = current value/sum
     prob_r = hist_r / neigh_r_repeat
     prob_g = hist_g / neigh_g_repeat
     prob_b = hist_b / neigh_b_repeat
-    print("prob size:", prob_r.shape)
 
     return prob_r, prob_g, prob_b
     
@@ -228,7 +217,6 @@ def pdf_divergence(image1, image2, sigma, kernel):
     """
     image_p = denorm(image1).unsqueeze(0).to(float)
     image_q = denorm(image2).unsqueeze(0).to(float)
-    print("image shape:", image_p.shape)
 
     #get probabilities of images for different channels
     prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel)
