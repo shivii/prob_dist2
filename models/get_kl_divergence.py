@@ -135,12 +135,16 @@ def batch_histogram(data_tensor, num_classes=-1):
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
     min = data_tensor.min()
     max = data_tensor.max()
-    if min == 0 and max ==255:
+    print("min max", min, max)
+    if min == 0 and max == 255:
+        print(batch_hist.shape)
         return batch_hist
     else:
         padding_left = min - 0
         padding_right = 255 - max
-        return F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
+        batch_hist = F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
+        print(batch_hist.shape)
+        return batch_hist
 
 
 def get_JSDiv(image1, image2):
@@ -269,7 +273,7 @@ if __name__ == '__main__':
     input_image6 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02391049_87.jpg")).to(device).unsqueeze(0).to(torch.float32)
 
 
-    print(pdf_divergence(input_image1,input_image1, sigma=1, kernel=3))
+    print(pdf_divergence(input_image3,input_image4, sigma=1, kernel=3))
 
     
 
