@@ -133,6 +133,9 @@ def batch_histogram(data_tensor, num_classes=-1):
     """
     print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
     print("data tensor  shape:", data_tensor.shape)
+    print("going to use one_hot:::::")
+    print("min is ", data_tensor.min())
+    print("max is ", data_tensor.max())
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
     print("batch_hist:", batch_hist.shape)
     min = data_tensor.min()
