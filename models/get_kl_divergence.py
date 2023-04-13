@@ -143,13 +143,13 @@ def batch_histogram(data_tensor, num_classes=-1):
         return F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
 
 
-def get_JSDiv(image1, image2, bins):
+def get_JSDiv(image1, image2):
     # for any pdf A, adding epsilon avoids 0's in the tensor A
     # to counter the addition of epsilon,
     # (A + epsilon )* 1/ 1+n*epsilon 
     epsilon = 1e-20
-    real_tensor = (image1 + epsilon) * (1/(1 + bins * epsilon))
-    fake_tensor = (image2 + epsilon) * (1/(1 + bins * epsilon))
+    real_tensor = (image1 + epsilon) * (1/(1 + 255 * epsilon))
+    fake_tensor = (image2 + epsilon) * (1/(1 + 255 * epsilon))
 
     # step4 joint distribution of 2 tensors
     m = (real_tensor + fake_tensor)/2
@@ -176,7 +176,7 @@ def get_JSDiv(image1, image2, bins):
 
 
 
-def calculate_probability_distribution_simple(image, sigma, kernel, bins):
+def calculate_probability_distribution_simple(image, sigma, kernel):
     # get r,g,b components
     r, g, b = get_rgb(image)
 
@@ -216,19 +216,19 @@ def calculate_probability_distribution_simple(image, sigma, kernel, bins):
 
     return prob_r, prob_g, prob_b
     
-def pdf_divergence(image1, image2, sigma, kernel, bins):
+def pdf_divergence(image1, image2, sigma, kernel):
     #step1 get images as floats
     image_p = image1.to(torch.float32)
     image_q = image2.to(torch.float32)
 
     #get probabilities of images for different channels
-    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel, bins) 
-    prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel, bins) 
+    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel) 
+    prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel) 
 
     #get JS Divergence
-    div_r = get_JSDiv(prob1_r, prob2_r, bins)
-    div_g = get_JSDiv(prob1_g, prob2_g, bins)
-    div_b = get_JSDiv(prob1_b, prob2_b, bins)
+    div_r = get_JSDiv(prob1_r, prob2_r)
+    div_g = get_JSDiv(prob1_g, prob2_g)
+    div_b = get_JSDiv(prob1_b, prob2_b)
 
     div = div_r.mean() + div_g.mean() + div_b.mean()
 
@@ -268,7 +268,7 @@ if __name__ == '__main__':
     input_image6 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02391049_87.jpg")).to(device).unsqueeze(0).to(torch.float32)
 
 
-    print(pdf_divergence(input_image1,input_image1, sigma=1, kernel=3, bins=255))
+    print(pdf_divergence(input_image1,input_image1, sigma=1, kernel=3))
 
     
 
