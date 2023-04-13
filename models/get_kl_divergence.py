@@ -110,7 +110,7 @@ def calculate_probability_distribution_histogram(image, sigma, kernel, bins):
     gaussian_hist_sums_repeated = gaussian_hist_sums.unsqueeze(1)
     gaussian_distribution = hist_gaussian/gaussian_hist_sums_repeated
 
-    print(gaussian_distribution[0])
+    print(gaussian_distribution[0])F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
 
 
     # step3 get PDF
@@ -131,6 +131,7 @@ def batch_histogram(data_tensor, num_classes=-1):
         containing histograms of the last dimension D_n of tensor,
         that is, result[d_1,...,d_{n-1}, c] = number of times c appears in tensor[d_1,...,d_{n-1}].
     """
+    print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
     print("data tensor  shape:", data_tensor.shape)
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
     print("batch_hist:", batch_hist.shape)
@@ -139,13 +140,16 @@ def batch_histogram(data_tensor, num_classes=-1):
     print("min max", min, max)
     if min == 0 and max == 255:
         print(batch_hist.shape)
+        print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
         return batch_hist
     else:
         padding_left = min - 0
         padding_right = 255 - max
         batch_hist = F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
         print(batch_hist.shape)
+        print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
         return batch_hist
+    
 
 
 def get_JSDiv(image1, image2):
@@ -179,6 +183,10 @@ def get_JSDiv(image1, image2):
     print("js_div", js_div.mean())
     return js_div
 
+def print_memory_usage():    
+    r = torch.cuda.memory_reserved(0)
+    a = torch.cuda.memory_allocated(0)
+    print ("memory =", r-a)
 
 
 def calculate_probability_distribution_simple(image, sigma, kernel):
@@ -194,12 +202,14 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     neigh_g = get_neigh(g, kernel, padding).squeeze(0)
     neigh_b = get_neigh(b, kernel, padding).squeeze(0)
     print_with_time("neighbour shapes", neigh_r.shape)
+    print_memory_usage()
 
     # get histogram of neighbours
     hist_r = batch_histogram(neigh_r.long()) 
     hist_g = batch_histogram(neigh_g.long()) 
     hist_b = batch_histogram(neigh_b.long()) 
     print("histogram shape:", hist_r.shape)
+    print_memory_usage()
 
     #getting sum along dim 2
     neigh_r_sum = hist_r.sum(1)
@@ -212,6 +222,7 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     neigh_g_repeat = neigh_g_sum.unsqueeze(1).repeat(1, 256)
     neigh_b_repeat = neigh_b_sum.unsqueeze(1).repeat(1, 256)
     print("neigh sum size:", neigh_r_repeat.shape)
+    print_memory_usage()
 
     # probability = current value/sum
     prob_r = hist_r / neigh_r_repeat
@@ -259,6 +270,8 @@ def get_details(t, label):
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(device)
+    print(torch.cuda.get_device_properties(0))
+    print_memory_usage()
     torch.set_printoptions(threshold=100000)
 
     transform = transforms.Compose([
@@ -274,8 +287,9 @@ if __name__ == '__main__':
     input_image5 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02381460_489.jpg")).to(device).unsqueeze(0).to(torch.float32)
     input_image6 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02391049_87.jpg")).to(device).unsqueeze(0).to(torch.float32)
 
+    print_memory_usage()
 
-    print(pdf_divergence(input_image3,input_image4, sigma=1, kernel=3))
+    print(pdf_divergence(input_image3,input_image4, sigma=1, kernel=5))
 
     
 
