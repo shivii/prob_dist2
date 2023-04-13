@@ -254,8 +254,14 @@ class CycleGANModel(BaseModel):
         """
         if opt.jsloss != 0:
             print("pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)")
+            print("min max for self.real_A", self.real_A.min(), self.real_A.max())
+            print("min max for self.rec_A", self.rec_A.min(), self.rec_A.max())
+            print("min max for self.fake_B", self.fake_B.min(), self.fake_B.max())
             div_A = pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)
             print("pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)")
+            print("min max for self.real_B", self.real_B.min(), self.real_B.max())
+            print("min max for self.rec_B", self.rec_B.min(), self.red_B.max())
+            print("min max for self.fake_B", self.fake_A.min(), self.fake_A.max())
             div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
@@ -281,8 +287,12 @@ class CycleGANModel(BaseModel):
         self.forward()      # compute fake images and reconstruction images.
 
         print("pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)")
+        print("min max for self.real_A", self.real_A.min(), self.real_A.max())
+        print("min max for self.fake_B", self.fake_B.min(), self.fake_B.max())
         js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
         print("pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)")
+        print("min max for self.real_B", self.real_B.min(), self.real_B.max())
+        print("min max for self.fake_B", self.fake_A.min(), self.fake_A.max())
         js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
 
         #kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen)

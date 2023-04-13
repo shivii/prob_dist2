@@ -189,6 +189,9 @@ def get_JSDiv(image1, image2):
 def calculate_probability_distribution_simple(image, sigma, kernel):
     # get r,g,b components
     r, g, b = get_rgb(image)
+    print("min, max for r ", r.min(), r.max())
+    print("min, max for g ", g.min(), g.max())
+    print("min, max for b ", b.min(), b.max())
 
     # get kernel size and padding
     no_of_neigh = kernel*kernel
@@ -232,7 +235,8 @@ def pdf_divergence(image1, image2, sigma, kernel):
     #step1 get images as floats
     image_p = image1.to(torch.float32)
     image_q = image2.to(torch.float32)
-    print("image shape:", image_p.shape)
+    print("min max for image_p after converting to float", image_p.min(), image_p.max())
+    print("min max for image_q after converting to float", image_q.min(), image_q.max())
 
     #get probabilities of images for different channels
     print("calculating probablility for image_p")
