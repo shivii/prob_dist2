@@ -175,7 +175,7 @@ def get_JSDiv(image1, image2):
 
     js_div = 0.5 * kl_per_pixel_real_fake + 0.5 * kl_per_pixel_fake_real
 
-    #print("js_div", js_div.mean())
+    print("js_div", js_div.mean())
     return js_div
 
 
@@ -192,31 +192,31 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     neigh_r = get_neigh(r, kernel, padding).squeeze(0)
     neigh_g = get_neigh(g, kernel, padding).squeeze(0)
     neigh_b = get_neigh(b, kernel, padding).squeeze(0)
-    #print_with_time("neighbour shapes", neigh_r[0])
+    print_with_time("neighbour shapes", neigh_r.shape)
 
     # get histogram of neighbours
     hist_r = batch_histogram(neigh_r.long()) 
     hist_g = batch_histogram(neigh_g.long()) 
     hist_b = batch_histogram(neigh_b.long()) 
-    #print("histogram shape:", hist_r[0])
+    print("histogram shape:", hist_r.shape)
 
     #getting sum along dim 2
     neigh_r_sum = hist_r.sum(1)
     neigh_g_sum = hist_g.sum(1)
     neigh_b_sum = hist_b.sum(1)
-    #print("sum shape:", neigh_r_sum.shape)
+    print("sum shape:", neigh_r_sum.shape)
 
     #repeat the sum values along every dim
     neigh_r_repeat = neigh_r_sum.unsqueeze(1).repeat(1, 256)
     neigh_g_repeat = neigh_g_sum.unsqueeze(1).repeat(1, 256)
     neigh_b_repeat = neigh_b_sum.unsqueeze(1).repeat(1, 256)
-    #print("neigh sum size:", neigh_r_repeat[0])
+    print("neigh sum size:", neigh_r_repeat.shape)
 
     # probability = current value/sum
     prob_r = hist_r / neigh_r_repeat
     prob_g = hist_g / neigh_g_repeat
     prob_b = hist_b / neigh_b_repeat
-    #print("prob size:", prob_r.shape)
+    print("prob size:", prob_r.shape)
 
     return prob_r, prob_g, prob_b
     
@@ -224,11 +224,12 @@ def pdf_divergence(image1, image2, sigma, kernel):
     #step1 get images as floats
     image_p = image1.to(torch.float32)
     image_q = image2.to(torch.float32)
-    print(image_p.shape)
+    print("image shape:", image_p.shape)
 
     #get probabilities of images for different channels
     prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel) 
     prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel) 
+    print("prob shape:",prob1_r.shape, prob1_g.shape, prob1_b.shape)
 
     #get JS Divergence
     div_r = get_JSDiv(prob1_r, prob2_r)
