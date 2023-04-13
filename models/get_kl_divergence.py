@@ -133,9 +133,6 @@ def batch_histogram(data_tensor, num_classes=-1):
     """
     print("----------------------------------------------------------------------------------------------------------------------------------------------------------")
     print("data tensor  shape:", data_tensor.shape)
-    print("going to use one_hot:::::")
-    print("min is ", data_tensor.min())
-    print("max is ", data_tensor.max())
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
     print("batch_hist:", batch_hist.shape)
     min = data_tensor.min()
@@ -189,9 +186,6 @@ def get_JSDiv(image1, image2):
 def calculate_probability_distribution_simple(image, sigma, kernel):
     # get r,g,b components
     r, g, b = get_rgb(image)
-    print("min, max for r ", r.min(), r.max())
-    print("min, max for g ", g.min(), g.max())
-    print("min, max for b ", b.min(), b.max())
 
     # get kernel size and padding
     no_of_neigh = kernel*kernel
@@ -203,11 +197,8 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     neigh_b = get_neigh(b, kernel, padding).squeeze(0)
 
     # get histogram of neighbours
-    print("calculating for red")
     hist_r = batch_histogram(neigh_r.long())
-    print("calculating for green")
     hist_g = batch_histogram(neigh_g.long()) 
-    print("calculating for blue")
     hist_b = batch_histogram(neigh_b.long()) 
     print("histogram shape:", hist_r.shape)
 
