@@ -135,13 +135,11 @@ def batch_histogram(data_tensor, num_classes=-1):
     min = data_tensor.min()
     max = data_tensor.max()
     if min == 0 and max == 255:
-        print(batch_hist.shape)
         return batch_hist
     else:
         padding_left = min - 0
         padding_right = 255 - max
         batch_hist = F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
-        print(batch_hist.shape)
         return batch_hist
     
 
@@ -174,7 +172,6 @@ def get_JSDiv(image1, image2):
 
     js_div = 0.5 * kl_per_pixel_real_fake + 0.5 * kl_per_pixel_fake_real
 
-    print("js_div", js_div.mean())
     return js_div
 
 def calculate_probability_distribution_simple(image, sigma, kernel):
