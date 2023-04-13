@@ -186,12 +186,6 @@ def get_JSDiv(image1, image2):
     print("js_div", js_div.mean())
     return js_div
 
-def print_memory_usage():    
-    r = torch.cuda.memory_reserved(0)
-    a = torch.cuda.memory_allocated(0)
-    print ("memory =", r-a)
-
-
 def calculate_probability_distribution_simple(image, sigma, kernel):
     # get r,g,b components
     r, g, b = get_rgb(image)
@@ -204,15 +198,15 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     neigh_r = get_neigh(r, kernel, padding).squeeze(0)
     neigh_g = get_neigh(g, kernel, padding).squeeze(0)
     neigh_b = get_neigh(b, kernel, padding).squeeze(0)
-    print_with_time("neighbour shapes", neigh_r.shape)
-    print_memory_usage()
 
     # get histogram of neighbours
-    hist_r = batch_histogram(neigh_r.long()) 
+    print("calculating for red")
+    hist_r = batch_histogram(neigh_r.long())
+    print("calculating for green")
     hist_g = batch_histogram(neigh_g.long()) 
+    print("calculating for blue")
     hist_b = batch_histogram(neigh_b.long()) 
     print("histogram shape:", hist_r.shape)
-    print_memory_usage()
 
     #getting sum along dim 2
     neigh_r_sum = hist_r.sum(1)
@@ -225,7 +219,6 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     neigh_g_repeat = neigh_g_sum.unsqueeze(1).repeat(1, 256)
     neigh_b_repeat = neigh_b_sum.unsqueeze(1).repeat(1, 256)
     print("neigh sum size:", neigh_r_repeat.shape)
-    print_memory_usage()
 
     # probability = current value/sum
     prob_r = hist_r / neigh_r_repeat
@@ -242,7 +235,9 @@ def pdf_divergence(image1, image2, sigma, kernel):
     print("image shape:", image_p.shape)
 
     #get probabilities of images for different channels
-    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel) 
+    print("calculating probablility for image_p")
+    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel)
+    print("calculating probablility for image_q")
     prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel) 
     print("prob shape:",prob1_r.shape, prob1_g.shape, prob1_b.shape)
 
@@ -274,7 +269,6 @@ if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(device)
     print(torch.cuda.get_device_properties(0))
-    print_memory_usage()
     torch.set_printoptions(threshold=100000)
 
     transform = transforms.Compose([
@@ -290,7 +284,6 @@ if __name__ == '__main__':
     input_image5 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02381460_489.jpg")).to(device).unsqueeze(0).to(torch.float32)
     input_image6 = transform(Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/n02391049_87.jpg")).to(device).unsqueeze(0).to(torch.float32)
 
-    print_memory_usage()
 
     print(pdf_divergence(input_image3,input_image4, sigma=1, kernel=5))
 

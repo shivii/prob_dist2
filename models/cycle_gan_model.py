@@ -253,7 +253,9 @@ class CycleGANModel(BaseModel):
             self.loss_kl_B = div_B * lambda_B
         """
         if opt.jsloss != 0:
+            print("pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)")
             div_A = pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)
+            print("pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)")
             div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
@@ -278,8 +280,9 @@ class CycleGANModel(BaseModel):
         # forward
         self.forward()      # compute fake images and reconstruction images.
 
-        print("shape of image ", self.real_A.shape)
+        print("pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)")
         js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
+        print("pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)")
         js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
 
         #kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen)
