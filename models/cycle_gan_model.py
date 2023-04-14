@@ -257,8 +257,12 @@ class CycleGANModel(BaseModel):
             self.loss_kl_B = div_B * lambda_B
         """
         if opt.jsloss != 0:
-            div_A = pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)
-            div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
+            #div_A = pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)
+            #div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
+            #self.loss_kl_A = div_A * lambda_A
+            #self.loss_kl_B = div_B * lambda_B
+            div_A = pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)
+            div_B = pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
             self.loss_kl_A = div_A 
