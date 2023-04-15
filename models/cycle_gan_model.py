@@ -135,7 +135,7 @@ class CycleGANModel(BaseModel):
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
         
 
-    def backward_D_basic(self, netD, real, fake, opt, js_div):
+    def backward_D_basic(self, netD, real, fake, opt):
         """Calculate GAN loss for the discriminator
 
         Parameters:
@@ -159,30 +159,31 @@ class CycleGANModel(BaseModel):
         loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
         # Combined loss and calculate gradients
 
+        """
         if opt.advloss == 0:
             div_js = js_div.detach() * self.alpha_js
             loss_D = (loss_D_real + loss_D_fake) * 0.5 + div_js
         else:
             loss_D = (loss_D_real + loss_D_fake)
-
+        """
         # Combined loss and calculate gradients
         
-
+        loss_D = (loss_D_real + loss_D_fake)
         #print("loss_D_fake Original vs kl",  loss_D_fake, loss_D_fake)
         loss_D.backward()
         return loss_D
 
-    def backward_D_A(self, opt, js_div_A_B):
+    def backward_D_A(self, opt):
         """Calculate GAN loss for discriminator D_A"""
         fake_B = self.fake_B_pool.query(self.fake_B)
-        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt, js_div_A_B)
+        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt)
 
     def backward_D_B(self, opt, js_div_B_A):
         """Calculate GAN loss for discriminator D_B"""
         fake_A = self.fake_A_pool.query(self.fake_A)
-        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt, js_div_B_A) 
+        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
         
-    def backward_G(self, opt, js_div_A_B, js_div_B_A):
+    def backward_G(self, opt):
         """Calculate GAN loss for the discriminator
 
         Parameters:
@@ -202,8 +203,6 @@ class CycleGANModel(BaseModel):
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
 
-
-
         """ Identity loss """
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed: ||G_A(B) - B||
@@ -217,17 +216,17 @@ class CycleGANModel(BaseModel):
             self.loss_idt_B = 0
 
         """Adversarial loss"""
-        if opt.advloss != 0:
-            # GAN loss D_A(G_A(A))
-            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
-            # GAN loss D_B(G_B(B))
-            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
-        else:
-            # GAN loss 
-            # GAN loss D_A(G_A(A))
-            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) + js_div_A_B * self.alpha_js
-            # GAN loss D_B(G_B(B))
-            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) + js_div_B_A * self.alpha_js
+        #if opt.advloss != 0:
+        # GAN loss D_A(G_A(A))
+        self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
+        # GAN loss D_B(G_B(B))
+        self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
+    
+        # GAN loss 
+        # GAN loss D_A(G_A(A))
+        #self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) + #js_div_A_B * self.alpha_js
+        # GAN loss D_B(G_B(B))
+        #self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) + #js_div_B_A * self.alpha_js
 
 
         """print both GAN loss:"""
@@ -261,8 +260,8 @@ class CycleGANModel(BaseModel):
             #div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
-            div_A = pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)
-            div_B = pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
+            div_A = pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss)
+            div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss)
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
             self.loss_kl_A = div_A 
@@ -286,8 +285,8 @@ class CycleGANModel(BaseModel):
         # forward
         self.forward()      # compute fake images and reconstruction images.
 
-        js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
-        js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
+        #js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
+        #js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
 
         #kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen)
         #kl_div_B_A = get_divergence(self.fake_A, self.real_B, opt.sigmaGen, opt.kernelGen)
@@ -297,16 +296,19 @@ class CycleGANModel(BaseModel):
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
         
-        
-        self.backward_G(opt, js_div_A_B, js_div_B_A)             # calculate gradients for G_A and G_B
-        #self.backward_G(opt, kl_div_A_B, kl_div_B_A)             # calculate gradients for G_A and G_B
+        self.backward_G(opt)             # calculate gradients for G_A and G_B
+        #self.backward_G(opt, js_div_A_B, js_div_B_A)             # calculate gradients for G_A and G_B
         
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
         self.optimizer_D.zero_grad()   # set D_A and D_B's gradients to zero
-        self.backward_D_A(opt, js_div_A_B)      # calculate gradients for D_A
-        self.backward_D_B(opt, js_div_B_A)      # calculate graidents for D_B
+
+        self.backward_D_A(opt)      # calculate gradients for D_A
+        self.backward_D_B(opt)      # calculate graidents for D_B
+
+        #self.backward_D_A(opt, js_div_A_B)      # calculate gradients for D_A
+        #self.backward_D_B(opt, js_div_B_A)      # calculate graidents for D_B
 
         #self.backward_D_A(opt, kl_div_A_B)      # calculate gradients for D_A
         #self.backward_D_B(opt, kl_div_B_A)      # calculate graidents for D_B
