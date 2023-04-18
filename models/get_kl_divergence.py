@@ -207,6 +207,92 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     prob_b = hist_b / neigh_b_repeat
 
     return prob_r, prob_g, prob_b
+
+def get_neigh_weights(neigh):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # predefined masks for computing weights of neighbours
+
+    print("shape of neigh is ::", neigh.shape)
+    mask1 = torch.tensor([
+        [-1, -1, -1, -1, -1],
+        [-1, -1, -1, -1, -1],
+        [-1, -1,  1, -1, -1],
+        [-1, -1, -1, -1, -1],
+        [-1, -1, -1, -1, -1]
+        ]).to(device).flatten()
+    mask2 = torch.tensor([
+        [-1, -1, -1, -1, -1],
+        [-1,  1,  1,  1, -1],
+        [-1,  1, -1,  1, -1],
+        [-1,  1,  1,  1, -1],
+        [-1, -1, -1, -1, -1]
+        ]).to(device).flatten()
+    mask3 = torch.tensor([
+        [1,  1,  1,  1, 1],
+        [1, -1, -1, -1, 1],
+        [1, -1, -1, -1, 1],
+        [1, -1, -1, -1, 1],
+        [1,  1,  1,  1, 1]
+        ]).to(device).flatten()
+    neigh_flatten_1 = (neigh * mask1)
+    neigh_flatten_1, indices = neigh_flatten_1.sort(1, descending=True)
+    neigh_flatten_1 = neigh_flatten_1[:, :1]
+
+    neigh_flatten_2 = (neigh * mask2)
+    neigh_flatten_2, indices = neigh_flatten_2.sort(1, descending=True)
+    neigh_flatten_2 = neigh_flatten_2[:, :8]
+
+    neigh_flatten_3 = (neigh * mask3)
+    neigh_flatten_3, indices = neigh_flatten_3.sort(1, descending=True)
+    neigh_flatten_3 = neigh_flatten_3[:, :16]
+
+    return neigh_flatten_1, neigh_flatten_2, neigh_flatten_3
+    #neigh_m1 = nei"""
+
+def batch_histogram_weighted(neigh):
+    neigh_wt_1, neigh_wt_2, neigh_wt_3 = get_neigh_weights(neigh)
+    hist1 = batch_histogram(neigh_wt_1.long())
+    hist2 = batch_histogram(neigh_wt_2.long())
+    hist3 = batch_histogram(neigh_wt_3.long())
+    weighted_hist = hist1 + hist2/8 + hist3/16
+    return weighted_hist
+
+
+def calculate_probability_distribution_weighted(image, kernel):
+    # get r,g,b components
+    r, g, b = get_rgb(image)
+
+    # get kernel size and padding
+    kernel = 5
+    padding = math.floor(kernel/2)
+
+    # get the nieghbours for each channel
+    neigh_r = get_neigh(r, kernel, padding).squeeze(0)
+    neigh_g = get_neigh(g, kernel, padding).squeeze(0)
+    neigh_b = get_neigh(b, kernel, padding).squeeze(0)
+
+    # get histogram of neighbours
+    hist_r = batch_histogram_weighted(neigh_r)
+    hist_g = batch_histogram_weighted(neigh_g) 
+    hist_b = batch_histogram_weighted(neigh_b) 
+
+    #getting sum along dim 2
+    neigh_r_sum = hist_r.sum(1)
+    neigh_g_sum = hist_g.sum(1)
+    neigh_b_sum = hist_b.sum(1)
+
+    #repeat the sum values along every dim
+    neigh_r_repeat = neigh_r_sum.unsqueeze(1).repeat(1, 256)
+    neigh_g_repeat = neigh_g_sum.unsqueeze(1).repeat(1, 256)
+    neigh_b_repeat = neigh_b_sum.unsqueeze(1).repeat(1, 256)
+
+    # probability = current value/sum
+    prob_r = hist_r / neigh_r_repeat
+    prob_g = hist_g / neigh_g_repeat
+    prob_b = hist_b / neigh_b_repeat
+
+    return prob_r, prob_g, prob_b
+
     
 def pdf_divergence(image1, image2, sigma, kernel):
     """
@@ -216,8 +302,8 @@ def pdf_divergence(image1, image2, sigma, kernel):
     image_q = denorm(image2).unsqueeze(0).to(float)
 
     #get probabilities of images for different channels
-    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel)
-    prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel) 
+    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_weighted(image_p, kernel)
+    prob2_r, prob2_g, prob2_b = calculate_probability_distribution_weighted(image_q, kernel) 
 
     #get JS Divergence
     div_r = get_JSDiv(prob1_r, prob2_r)
@@ -227,6 +313,7 @@ def pdf_divergence(image1, image2, sigma, kernel):
     div = div_r.mean() + div_g.mean() + div_b.mean()
 
     return div
+    
     
     
 """
