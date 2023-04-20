@@ -32,9 +32,9 @@ def get_neigh(image, k, p):
 
 def get_rgb(image):
     #print("seperating out into channels")
-    image_r = image[0, 0, :, :]
-    image_g = image[0, 1, :, :]
-    image_b = image[0, 2, :, :]
+    image_r = image[0, :, :].to(float)
+    image_g = image[1, :, :].to(float)
+    image_b = image[2, :, :].to(float)
     image_r = image_r.unsqueeze(0).unsqueeze(0)
     image_g = image_g.unsqueeze(0).unsqueeze(0)
     image_b = image_b.unsqueeze(0).unsqueeze(0)
@@ -208,14 +208,6 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
 
     return prob_r, prob_g, prob_b
 
-def get_KLDiv(image1, image2):
-    # for any pdf A, adding epsilon avoids 0's in the tensor A
-    # to counter the addition of epsilon,
-    # (A + epsilon )* 1/ 1+n*epsilon 
-    epsilon = 1e-20
-    real_tensor = image1 + epsilon
-    fake_tensor = image2 + epsilon
-
 
     # step5 compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
     kl_real_fake = (real_tensor) * ((real_tensor)/(fake_tensor)).log()
@@ -225,22 +217,94 @@ def get_KLDiv(image1, image2):
     print("KL fake-> real", kl_fake_real.mean())
 
     return kl_real_fake
-    
-def pdf_divergence(image1, image2, sigma, kernel):
-    """
-    Denormalize image
-    """
-    im1_r, im1_g, im1_b = scale_image_0_1(image1)
-    im2_r, im2_g, im2_b = scale_image_0_1(image2)
 
+def calculate_probability_distribution_patch(image, kernel):
+    # denorm 
+    image = denorm(image)
+
+    print(image.shape)
+
+    
+    # get r,g,b components
+    r, g, b = get_rgb(image)
+    
+    # get non overlapping patches
+    im_r = get_patches(r, kernel).squeeze(0)
+    im_g = get_patches(g, kernel).squeeze(0)
+    im_b = get_patches(b, kernel).squeeze(0)
+#
+    #print(im_r.shape)
+    #print(im_g.shape)
+    #print(im_b.shape)
+    
+    # get histogram of neighbours
+    hist_r = batch_histogram(im_r.long())
+    hist_g = batch_histogram(im_g.long()) 
+    hist_b = batch_histogram(im_b.long()) 
+
+    #getting sum along dim 2
+    neigh_r_sum = hist_r.sum(1)
+    neigh_g_sum = hist_g.sum(1)
+    neigh_b_sum = hist_b.sum(1)
+
+    #repeat the sum values along every dim
+    neigh_r_repeat = neigh_r_sum.unsqueeze(1).repeat(1, 256)
+    neigh_g_repeat = neigh_g_sum.unsqueeze(1).repeat(1, 256)
+    neigh_b_repeat = neigh_b_sum.unsqueeze(1).repeat(1, 256)
+
+    # probability = current value/sum
+    prob_r = hist_r / neigh_r_repeat
+    prob_g = hist_g / neigh_g_repeat
+    prob_b = hist_b / neigh_b_repeat
+
+    return prob_r, prob_g, prob_b
+    
+
+def get_KLDiv(image1, image2):
+    # for any pdf A, adding epsilon avoids 0's in the tensor A
+    # to counter the addition of epsilon,
+    # (A + epsilon )* 1/ 1+n*epsilon 
+    epsilon = 1e-20
+    real_tensor = image1 + epsilon
+    fake_tensor = image2 + epsilon
+
+    # step5 compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
+    kl_real_fake = (real_tensor) * ((real_tensor)/(fake_tensor)).log()
+    kl_fake_real = (fake_tensor) * ((fake_tensor)/(real_tensor)).log()
+
+    print("KL real-> fake", kl_real_fake.mean())
+    print("KL fake-> real", kl_fake_real.mean())
+
+    return kl_real_fake
+
+def get_patches(image, k):
+    kernel = k
+    stride = k
+    #print("calculating neighbours")
+    unfold = nn.Unfold(kernel_size=(k,k), padding=0, stride=stride)
+    output = unfold(image)
+    swapped_ouput = torch.swapaxes(output, 1, 2)
+    print("unfold outout size:", swapped_ouput.shape)
+    return swapped_ouput
+
+    
+def pdf_divergence(image1, image2, kernel):
+
+    
+    #calculate_probability_distribution_patch(image1, kernel)
+    
+    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_patch(image1, kernel)
+    prob2_r, prob2_g, prob2_b = calculate_probability_distribution_patch(image2, kernel)
+    
     #get JS Divergence
-    div_r = get_KLDiv(im1_r, im2_r)
-    div_g = get_KLDiv(im1_g, im2_g)
-    div_b = get_KLDiv(im1_b, im2_b)
+    div_r = get_KLDiv(prob1_r, prob2_r)
+    div_g = get_KLDiv(prob1_g, prob2_g)
+    div_b = get_KLDiv(prob1_b, prob2_b)
 
     div = div_r.mean() + div_g.mean() + div_b.mean()
     div = div * 1e+06
     return div
+    
 
     
 
@@ -325,8 +389,8 @@ if __name__ == '__main__':
                 ])
     image1 = trans(input_image1).to(device)
     image2 = trans(input_image2).to(device)
-    div = pdf_divergence(image1.unsqueeze(0),image2.unsqueeze(0), sigma=1, kernel=5)
-    print("div:", div * 1e+06)
+    div = pdf_divergence(image1.unsqueeze(0),image2.unsqueeze(0), kernel=8)
+    print("div:", div * 10)
 
     
 

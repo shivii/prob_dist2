@@ -264,8 +264,8 @@ class CycleGANModel(BaseModel):
             div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss)
             #self.loss_kl_A = div_A * lambda_A
             #self.loss_kl_B = div_B * lambda_B
-            self.loss_kl_A = div_A * 2
-            self.loss_kl_B = div_B * 2
+            self.loss_kl_A = div_A * 10
+            self.loss_kl_B = div_B * 10
         else :
             self.loss_kl_A = 0
             self.loss_kl_B = 0
