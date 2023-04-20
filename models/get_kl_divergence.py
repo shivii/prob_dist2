@@ -303,7 +303,7 @@ def pdf_divergence(image1, image2, kernel):
 
     div = div_r.mean() + div_g.mean() + div_b.mean()
     div = div * 1e+06
-    return div
+    return div * 10
     
 
     
