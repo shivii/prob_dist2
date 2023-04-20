@@ -302,8 +302,13 @@ def pdf_divergence(image1, image2, kernel):
     div_b = get_KLDiv(prob1_b, prob2_b)
 
     div = div_r.mean() + div_g.mean() + div_b.mean()
+<<<<<<< HEAD
     div = div * 1e+06
     return div * 10
+=======
+    
+    return div
+>>>>>>> 928b43daecc09c4abdb2f3ea509f3ed0f93c62cb
     
 
     
