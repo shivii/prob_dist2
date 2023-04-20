@@ -241,37 +241,38 @@ def pdf_divergence(image1, image2, sigma, kernel):
     div = div_r.mean() + div_g.mean() + div_b.mean()
 
     return div
+
     
 
 def scale_image_0_1(tensor_image):
     # get r,g,b components
     tensor_image_r, tensor_image_g, tensor_image_b = get_rgb(tensor_image)
 
-    epsilon = 1e-10
+    epsilon = 1e-20
     # step 1: convert it to [0 ,2]
     tensor_image_r = tensor_image_r +1
     tensor_image_g = tensor_image_g +1
     tensor_image_b = tensor_image_b +1
 
     # step 2: convert it to [0 ,1]
-    tensor_image_r = tensor_image_r - tensor_image_r.min()
-    tensor_image_g = tensor_image_g - tensor_image_g.min()
-    tensor_image_b = tensor_image_b - tensor_image_b.min()
+    tensor_image_r = (tensor_image_r / 2 + epsilon) / (1/(1+256*256*epsilon))
+    tensor_image_g = (tensor_image_g / 2 + epsilon) / (1/(1+256*256*epsilon))
+    tensor_image_b = (tensor_image_b / 2 + epsilon) / (1/(1+256*256*epsilon))
 
-    tensor_image_0_1r = tensor_image_r / (tensor_image_r.max() - tensor_image_r.min())
-    tensor_image_0_1g = tensor_image_g / (tensor_image_g.max() - tensor_image_g.min())
-    tensor_image_0_1b = tensor_image_b / (tensor_image_b.max() - tensor_image_b.min())
+    #tensor_image_0_1r = tensor_image_r / (tensor_image_r.max() - tensor_image_r.min())
+    #tensor_image_0_1g = tensor_image_g / (tensor_image_g.max() - tensor_image_g.min())
+    #tensor_image_0_1b = tensor_image_b / (tensor_image_b.max() - tensor_image_b.min())
 
-    tensor_image_sumr = tensor_image_0_1r.sum()
-    tensor_image_sumg = tensor_image_0_1g.sum()
-    tensor_image_sumb = tensor_image_0_1b.sum()
+    tensor_image_sumr = tensor_image_r.sum()
+    tensor_image_sumg = tensor_image_g.sum()
+    tensor_image_sumb = tensor_image_b.sum()
 
-    tensor_norm_r = tensor_image_0_1r /tensor_image_sumr
-    tensor_norm_g = tensor_image_0_1g /tensor_image_sumg
-    tensor_norm_b = tensor_image_0_1b /tensor_image_sumb
+    tensor_norm_r = tensor_image_r /tensor_image_sumr
+    tensor_norm_g = tensor_image_g /tensor_image_sumg
+    tensor_norm_b = tensor_image_b /tensor_image_sumb
     
     #print("sum:", tensor_image_sumr, tensor_image_sumg, tensor_image_sumb)
-    #print("Min, Max R:", tensor_norm_r.min(), tensor_norm_r.max(), tensor_norm_r.sum())
+    #print("Min, Max R:", tensor_norm_r.unique(), tensor_norm_r.max(), tensor_norm_r.sum())
     #print("Min, Max G:", tensor_norm_g.min(), tensor_norm_g.max(), tensor_norm_g.sum())
     #print("Min, Max B:", tensor_norm_b.min(), tensor_norm_b.max(), tensor_norm_b.sum())
 
