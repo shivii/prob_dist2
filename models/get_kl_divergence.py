@@ -207,27 +207,76 @@ def calculate_probability_distribution_simple(image, sigma, kernel):
     prob_b = hist_b / neigh_b_repeat
 
     return prob_r, prob_g, prob_b
+
+def get_KLDiv(image1, image2):
+    # for any pdf A, adding epsilon avoids 0's in the tensor A
+    # to counter the addition of epsilon,
+    # (A + epsilon )* 1/ 1+n*epsilon 
+    epsilon = 1e-20
+    real_tensor = image1 + epsilon
+    fake_tensor = image2 + epsilon
+
+
+    # step5 compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
+    kl_real_fake = (real_tensor) * ((real_tensor)/(fake_tensor)).log()
+    kl_fake_real = (fake_tensor) * ((fake_tensor)/(real_tensor)).log()
+
+    print("KL real-> fake", kl_real_fake.mean())
+    print("KL fake-> real", kl_fake_real.mean())
+
+    return kl_real_fake
     
 def pdf_divergence(image1, image2, sigma, kernel):
     """
     Denormalize image
     """
-    image_p = denorm(image1).unsqueeze(0).to(float)
-    image_q = denorm(image2).unsqueeze(0).to(float)
-
-    #get probabilities of images for different channels
-    prob1_r, prob1_g, prob1_b = calculate_probability_distribution_simple(image_p, sigma, kernel)
-    prob2_r, prob2_g, prob2_b = calculate_probability_distribution_simple(image_q, sigma, kernel) 
+    im1_r, im1_g, im1_b = scale_image_0_1(image1)
+    im2_r, im2_g, im2_b = scale_image_0_1(image2)
 
     #get JS Divergence
-    div_r = get_JSDiv(prob1_r, prob2_r)
-    div_g = get_JSDiv(prob1_g, prob2_g)
-    div_b = get_JSDiv(prob1_b, prob2_b)
+    div_r = get_KLDiv(im1_r, im2_r)
+    div_g = get_KLDiv(im1_g, im2_g)
+    div_b = get_KLDiv(im1_b, im2_b)
 
     div = div_r.mean() + div_g.mean() + div_b.mean()
 
     return div
     
+
+def scale_image_0_1(tensor_image):
+    # get r,g,b components
+    tensor_image_r, tensor_image_g, tensor_image_b = get_rgb(tensor_image)
+
+    epsilon = 1e-10
+    # step 1: convert it to [0 ,2]
+    tensor_image_r = tensor_image_r +1
+    tensor_image_g = tensor_image_g +1
+    tensor_image_b = tensor_image_b +1
+
+    # step 2: convert it to [0 ,1]
+    tensor_image_r = tensor_image_r - tensor_image_r.min()
+    tensor_image_g = tensor_image_g - tensor_image_g.min()
+    tensor_image_b = tensor_image_b - tensor_image_b.min()
+
+    tensor_image_0_1r = tensor_image_r / (tensor_image_r.max() - tensor_image_r.min())
+    tensor_image_0_1g = tensor_image_g / (tensor_image_g.max() - tensor_image_g.min())
+    tensor_image_0_1b = tensor_image_b / (tensor_image_b.max() - tensor_image_b.min())
+
+    tensor_image_sumr = tensor_image_0_1r.sum()
+    tensor_image_sumg = tensor_image_0_1g.sum()
+    tensor_image_sumb = tensor_image_0_1b.sum()
+
+    tensor_norm_r = tensor_image_0_1r /tensor_image_sumr
+    tensor_norm_g = tensor_image_0_1g /tensor_image_sumg
+    tensor_norm_b = tensor_image_0_1b /tensor_image_sumb
+    
+    #print("sum:", tensor_image_sumr, tensor_image_sumg, tensor_image_sumb)
+    #print("Min, Max R:", tensor_norm_r.min(), tensor_norm_r.max(), tensor_norm_r.sum())
+    #print("Min, Max G:", tensor_norm_g.min(), tensor_norm_g.max(), tensor_norm_g.sum())
+    #print("Min, Max B:", tensor_norm_b.min(), tensor_norm_b.max(), tensor_norm_b.sum())
+
+    return tensor_norm_r, tensor_norm_g, tensor_norm_b
+
     
 """
 n is the number of repetitions
@@ -275,7 +324,8 @@ if __name__ == '__main__':
                 ])
     image1 = trans(input_image1).to(device)
     image2 = trans(input_image2).to(device)
-    print(pdf_divergence(image1.unsqueeze(0),image2.unsqueeze(0), sigma=1, kernel=5))
+    div = pdf_divergence(image1.unsqueeze(0),image2.unsqueeze(0), sigma=1, kernel=5)
+    print("div:", div * 1e+06)
 
     
 
