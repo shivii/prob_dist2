@@ -134,7 +134,7 @@ def batch_histogram(data_tensor, num_classes=-1):
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
     min = data_tensor.min()
     max = data_tensor.max()
-    if min == 0 and max == 255:
+    if (min == 0 and max == 255) or batch_hist[0].shape[0] == 256:
         return batch_hist
     else:
         padding_left = min - 0
