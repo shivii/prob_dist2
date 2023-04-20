@@ -239,7 +239,7 @@ def pdf_divergence(image1, image2, sigma, kernel):
     div_b = get_KLDiv(im1_b, im2_b)
 
     div = div_r.mean() + div_g.mean() + div_b.mean()
-
+    div = div * 1e+06
     return div
 
     
