@@ -139,7 +139,7 @@ def batch_histogram(data_tensor, num_classes=-1):
     else:
         padding_left = min - 0
         padding_right = 255 - max
-        batch_hist = F.pad(input=batch_hist, pad=(padding_left, padding_right), mode='constant', value=0) 
+        batch_hist = F.pad(input=batch_hist, pad=(0, padding_right), mode='constant', value=0) 
         return batch_hist
     
 
@@ -222,7 +222,7 @@ def calculate_probability_distribution_patch(image, kernel):
     # denorm 
     image = denorm(image)
 
-    print(image.shape)
+    #print(image.shape)
 
     
     # get r,g,b components
@@ -272,8 +272,8 @@ def get_KLDiv(image1, image2):
     kl_real_fake = (real_tensor) * ((real_tensor)/(fake_tensor)).log()
     kl_fake_real = (fake_tensor) * ((fake_tensor)/(real_tensor)).log()
 
-    print("KL real-> fake", kl_real_fake.mean())
-    print("KL fake-> real", kl_fake_real.mean())
+    #print("KL real-> fake", kl_real_fake.mean())
+    #print("KL fake-> real", kl_fake_real.mean())
 
     return kl_real_fake
 
@@ -284,7 +284,7 @@ def get_patches(image, k):
     unfold = nn.Unfold(kernel_size=(k,k), padding=0, stride=stride)
     output = unfold(image)
     swapped_ouput = torch.swapaxes(output, 1, 2)
-    print("unfold outout size:", swapped_ouput.shape)
+    #print("unfold outout size:", swapped_ouput.shape)
     return swapped_ouput
 
     
