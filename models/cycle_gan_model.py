@@ -63,7 +63,7 @@ class CycleGANModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         ############TSNE changes
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B', 'kl_A', 'kl_B']
-        self.initialise_pdf_losses(self, opt)
+        self.initialise_pdf_losses(opt)
         
         
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
