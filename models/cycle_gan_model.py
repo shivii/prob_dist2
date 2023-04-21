@@ -217,29 +217,29 @@ class CycleGANModel(BaseModel):
         sum = 0
         if "1" in pdf_list:
             coeff = 7
-            self.loss_gauss_A = get_divergence(self.real_A, self.rec_A, pdf=1, klloss=opt.klloss)
-            self.loss_gauss_B = get_divergence(self.real_B, self.rec_B, pdf=1, klloss=opt.klloss)
-            sum = sum + self.loss_gauss_A * coeff + self.loss_gauss_B * coeff
+            self.loss_gauss_A = get_divergence(self.real_A, self.rec_A, pdf=1, klloss=opt.klloss) * coeff
+            self.loss_gauss_B = get_divergence(self.real_B, self.rec_B, pdf=1, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_gauss_A + self.loss_gauss_B
         if "2" in pdf_list:
             coeff = 1
-            self.loss_hist_A = get_divergence(self.real_A, self.rec_A, pdf=2, klloss=opt.klloss)
-            self.loss_hist_B = get_divergence(self.real_B, self.rec_B, pdf=2, klloss=opt.klloss)
-            sum = sum + self.loss_hist_A * coeff + self.loss_hist_B * coeff
+            self.loss_hist_A = get_divergence(self.real_A, self.rec_A, pdf=2, klloss=opt.klloss) * coeff
+            self.loss_hist_B = get_divergence(self.real_B, self.rec_B, pdf=2, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_hist_A + self.loss_hist_B
         if "3" in pdf_list:
             coeff = 1
-            self.loss_wt_hist_A = get_divergence(self.real_A, self.rec_A, pdf=3, klloss=opt.klloss)
-            self.loss_wt_hist_B = get_divergence(self.real_B, self.rec_B, pdf=3, klloss=opt.klloss)
-            sum = sum + self.loss_wt_hist_A * coeff + self.loss_wt_hist_B * coeff
+            self.loss_wt_hist_A = get_divergence(self.real_A, self.rec_A, pdf=3, klloss=opt.klloss) * coeff
+            self.loss_wt_hist_B = get_divergence(self.real_B, self.rec_B, pdf=3, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_wt_hist_A + self.loss_wt_hist_B
         if "4" in pdf_list:
-            coeff = 3e+06
-            self.loss_img_pdf_A = get_divergence(self.real_A, self.rec_A, pdf=4, klloss=opt.klloss)
-            self.loss_img_pdf_B = get_divergence(self.real_B, self.rec_B, pdf=4, klloss=opt.klloss)
-            sum = sum + self.loss_img_pdf_A * coeff + self.loss_img_pdf_B * coeff
+            coeff = 100
+            self.loss_img_pdf_A = get_divergence(self.real_A, self.rec_A, pdf=4, klloss=opt.klloss) * coeff
+            self.loss_img_pdf_B = get_divergence(self.real_B, self.rec_B, pdf=4, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_img_pdf_A + self.loss_img_pdf_B
         if "5" in pdf_list:
             coeff = 2
-            self.loss_hist_pat_A = get_divergence(self.real_A, self.rec_A, pdf=5, klloss=opt.klloss)
-            self.loss_hist_pat_B = get_divergence(self.real_B, self.rec_B, pdf=5, klloss=opt.klloss)
-            sum = sum + self.loss_hist_pat_A * coeff + self.loss_hist_pat_B * coeff
+            self.loss_hist_pat_A = get_divergence(self.real_A, self.rec_A, pdf=5, klloss=opt.klloss) * coeff
+            self.loss_hist_pat_B = get_divergence(self.real_B, self.rec_B, pdf=5, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_hist_pat_A + self.loss_hist_pat_B
         
         return sum
         
