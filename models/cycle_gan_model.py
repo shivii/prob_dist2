@@ -214,7 +214,7 @@ class CycleGANModel(BaseModel):
 
     def compute_pdf_losses(self, opt, img1, img2):
         pdf_list = opt.which_pdf.split(",")
-        loss_sum = 0
+        sum = 0
         if "1" in pdf_list:
             coeff = 7
             self.loss_gauss_A = get_divergence(self.real_A, self.rec_A, pdf=1, klloss=opt.klloss)
