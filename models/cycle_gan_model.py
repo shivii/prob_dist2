@@ -185,7 +185,7 @@ class CycleGANModel(BaseModel):
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
         
     def initialise_pdf_losses(self, opt):
-        pdf_list = opt.pdf.split(",")
+        pdf_list = opt.which_pdf.split(",")
         if "1" in pdf_list:
             self.loss_gauss_A = 0
             self.loss_gauss_B = 0
