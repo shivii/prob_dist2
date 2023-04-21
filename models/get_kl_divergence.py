@@ -479,7 +479,7 @@ def calculate_pdf_image_patch(r, g, b, kernel):
 
     return prob_r, prob_g, prob_b
 
-def get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1):
+def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     """
     Main functions 
     1. Gaussian pdf
@@ -495,6 +495,9 @@ def get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1):
     """
     #get options
     #pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
+
+    if klloss == 0:
+        return 0 # when we donot want to compute divergence
 
     """
     Denormalize image
@@ -543,7 +546,7 @@ def get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1):
     div = div_r + div_g + div_b
     
     print("div shape", div.shape)
-    return div
+    return div.item()
 
 
 
@@ -574,7 +577,7 @@ if __name__ == '__main__':
 
     pdf = 2
     klloss=2
-    div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
+    div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss, opt)
 
     print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
 
