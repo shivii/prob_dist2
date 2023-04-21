@@ -546,7 +546,7 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     div = div_r + div_g + div_b
     
     print("div shape", div.shape)
-    return div.item()
+    return div.mean()
 
 
 
@@ -577,7 +577,7 @@ if __name__ == '__main__':
 
     pdf = 2
     klloss=2
-    div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss, opt)
+    div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
 
     print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
 
