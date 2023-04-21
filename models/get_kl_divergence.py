@@ -544,8 +544,6 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
         div_b = get_JSDiv(prob1_b, prob2_b, pdf)
 
     div = div_r + div_g + div_b
-    
-    print("div shape", div.shape)
     return div.mean()
 
 
