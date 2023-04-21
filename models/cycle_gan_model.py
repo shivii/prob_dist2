@@ -317,7 +317,7 @@ class CycleGANModel(BaseModel):
         get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1, agg="mean")
         pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
         """
-        total_pdf_divergence = self.compute_pdf_losses(self, opt, self.real_A, self.rec_A, opt.klloss)
+        total_pdf_divergence = self.compute_pdf_losses(opt, self.real_A, self.rec_A)
    
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + total_pdf_divergence
         
