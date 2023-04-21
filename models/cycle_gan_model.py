@@ -5,7 +5,7 @@ from .base_model import BaseModel
 from . import networks
 from models.utility import print_with_time as print
 
-from models.get_kl_divergence import pdf_divergence
+from models.get_kl_divergence import get_divergence
 from math import log
 ##############TSNE changes
 
@@ -63,6 +63,7 @@ class CycleGANModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         ############TSNE changes
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B', 'kl_A', 'kl_B']
+        self.initialise_pdf_losses(self, opt)
         
         
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
@@ -183,6 +184,68 @@ class CycleGANModel(BaseModel):
         fake_A = self.fake_A_pool.query(self.fake_A)
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
         
+    def initialise_pdf_losses(self, opt):
+        pdf_list = opt.pdf.split(",")
+        if "1" in pdf_list:
+            self.loss_gauss_A = 0
+            self.loss_gauss_B = 0
+            self.loss_names.append("gauss_A")
+            self.loss_names.append("gauss_B")
+        if "2" in pdf_list:
+            self.loss_hist_A = 0
+            self.loss_hist_B = 0
+            self.loss_names.append("hist_A")
+            self.loss_names.append("hist_B")
+        if "3" in pdf_list:
+            self.loss_wt_hist_A = 0
+            self.loss_wt_hist_B = 0
+            self.loss_names.append("wt_hist_A")
+            self.loss_names.append("wt_hist_B")
+        if "4" in pdf_list:
+            self.loss_img_pdf_A = 0
+            self.loss_img_pdf_B = 0
+            self.loss_names.append("img_pdf_A")
+            self.loss_names.append("img_pdf_B")
+        if "5" in pdf_list:
+            self.loss_hist_pat_A = 0
+            self.loss_hist_pat_B = 0
+            self.loss_names.append("hist_pat_A")
+            self.loss_names.append("hist_pat_B")
+
+    def compute_pdf_losses(self, opt, img1, img2):
+        pdf_list = opt.pdf.split(",")
+        loss_sum = 0
+        if "1" in pdf_list:
+            coeff = 7
+            self.loss_gauss_A = get_divergence(self.real_A, self.rec_A, pdf=1, klloss=opt.klloss)
+            self.loss_gauss_B = get_divergence(self.real_B, self.rec_B, pdf=1, klloss=opt.klloss)
+            sum = sum + self.loss_gauss_A * coeff + self.loss_gauss_B * coeff
+        if "2" in pdf_list:
+            coeff = 1
+            self.loss_hist_A = get_divergence(self.real_A, self.rec_A, pdf=2, klloss=opt.klloss)
+            self.loss_hist_B = get_divergence(self.real_B, self.rec_B, pdf=2, klloss=opt.klloss)
+            sum = sum + self.loss_hist_A * coeff + self.loss_hist_B * coeff
+        if "3" in pdf_list:
+            coeff = 1
+            self.loss_wt_hist_A = get_divergence(self.real_A, self.rec_A, pdf=3, klloss=opt.klloss)
+            self.loss_wt_hist_B = get_divergence(self.real_B, self.rec_B, pdf=3, klloss=opt.klloss)
+            sum = sum + self.loss_wt_hist_A * coeff + self.loss_wt_hist_B * coeff
+        if "4" in pdf_list:
+            coeff = 8e+04
+            self.loss_img_pdf_A = get_divergence(self.real_A, self.rec_A, pdf=4, klloss=opt.klloss)
+            self.loss_img_pdf_B = get_divergence(self.real_B, self.rec_B, pdf=4, klloss=opt.klloss)
+            sum = sum + self.loss_img_pdf_A * coeff + self.loss_img_pdf_B * coeff
+        if "5" in pdf_list:
+            coeff = 2
+            self.loss_hist_pat_A = get_divergence(self.real_A, self.rec_A, pdf=5, klloss=opt.klloss)
+            self.loss_hist_pat_B = get_divergence(self.real_B, self.rec_B, pdf=5, klloss=opt.klloss)
+            sum = sum + self.loss_hist_pat_A * coeff + self.loss_hist_pat_B * coeff
+        
+        return sum
+        
+    
+
+
     def backward_G(self, opt):
         """Calculate GAN loss for the discriminator
 
@@ -245,40 +308,22 @@ class CycleGANModel(BaseModel):
             # Backward cycle loss || G_A(G_B(B)) - B||
             self.loss_cycle_B = 0
         
-        """KL divergence loss"""
-        #print("Computing KL Divergence_loss")
-        ## KL divergence computation
         """
-        if opt.klloss != 0:
-            div_A = get_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss).su,()
-            div_B = get_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss).sum()
-            self.loss_kl_A = div_A * lambda_A
-            self.loss_kl_B = div_B * lambda_B
-        """
-        if opt.jsloss != 0:
-            #div_A = pdf_divergence(self.real_A, self.rec_A, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_A, self.fake_B, opt.sigmaCycleloss, opt.kernelCycleloss)
-            #div_B = pdf_divergence(self.real_B, self.rec_B, opt.sigmaCycleloss, opt.kernelCycleloss) + pdf_divergence(self.real_B, self.fake_A, opt.sigmaCycleloss, opt.kernelCycleloss)
-            #self.loss_kl_A = div_A * lambda_A
-            #self.loss_kl_B = div_B * lambda_B
-            div_A = pdf_divergence(self.real_A, self.rec_A, 8)
-            div_B = pdf_divergence(self.real_B, self.rec_B, 8)
-            #self.loss_kl_A = div_A * lambda_A
-            #self.loss_kl_B = div_B * lambda_B
-            self.loss_kl_A = div_A * 10
-            self.loss_kl_B = div_B * 10
-        else :
-            self.loss_kl_A = 0
-            self.loss_kl_B = 0
+        Divergence loss:
 
-        #print("KL div loss:", self.loss_kl_A, self.loss_kl_B)    
-      
-        #print("TSNE loss:", self.loss_tsne_A, self.loss_tsne_B)
-        # combined loss and calculate gradients
-        #print("Computing Total loss")
-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_kl_A + self.loss_kl_B
+        if kl loss = 0: no divergence => div = 0
+        if kl loss = 1: divergence = KL => div = kl_div
+        if kl loss = 2: divergence = JS => div = js_div
+        get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1, agg="mean")
+        pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
+        """
+        total_pdf_divergence = self.compute_pdf_losses(self, opt, self.real_A, self.rec_A, opt.klloss)
+   
+        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + total_pdf_divergence
         
         self.loss_G.backward()
     
+
 
     def optimize_parameters(self, opt):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
