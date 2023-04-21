@@ -213,7 +213,7 @@ class CycleGANModel(BaseModel):
             self.loss_names.append("hist_pat_B")
 
     def compute_pdf_losses(self, opt, img1, img2):
-        pdf_list = opt.pdf.split(",")
+        pdf_list = opt.which_pdf.split(",")
         loss_sum = 0
         if "1" in pdf_list:
             coeff = 7
