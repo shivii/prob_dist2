@@ -1,0 +1,92 @@
+conda activate cyclegan_clone_29_3
+(base) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ conda activate cyclegan_clone_29_3
+/home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div: pdf:1 kl:2  tensor(0.4702, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+pdf=1 klloss div:  2 2 tensor(1.7913, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+pdf=1 klloss div:  3 2 tensor(1.6291, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+pdf=1 klloss div:  4 2 tensor(3.4628e-05, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+pdf=1 klloss div:  5 2 tensor(1.2029, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+kldiv shape: torch.Size([65536, 9])
+kldiv shape: torch.Size([65536, 9])
+kldiv shape: torch.Size([65536, 9])
+pdf=1 klloss div:  1 1 tensor(1.3369, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+kldiv shape: torch.Size([64516, 256])
+kldiv shape: torch.Size([64516, 256])
+kldiv shape: torch.Size([64516, 256])
+pdf=1 klloss div:  2 1 tensor(0.4427, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+pdf=1 klloss div:  3 1 tensor(0.3661, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+pdf=1 klloss div:  4 1 tensor(5.5466e-07, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+pdf=1 klloss div:  5 1 tensor(0.2675, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([1024, 256])
+pdf=1 klloss div:  5 1 tensor(0.2675, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([256, 256])
+pdf=1 klloss div:  4 1 tensor(5.5466e-07, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([65536, 256])
+pdf=1 klloss div:  3 1 tensor(0.3661, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([64516, 256])
+pdf=1 klloss div:  2 1 tensor(0.4427, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([65536, 9])
+pdf=1 klloss div:  1 1 tensor(1.3369, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([65536])
+pdf=1 klloss div:  1 2 tensor(0.4702, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([64516])
+pdf=1 klloss div:  2 2 tensor(1.7913, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([65536])
+pdf=1 klloss div:  3 2 tensor(1.6291, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+/home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+div shape torch.Size([256])
+pdf=1 klloss div:  4 2 tensor(3.4628e-05, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([1024])
+pdf=1 klloss div:  5 2 tensor(1.2029, device='cuda:0')
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([65536])
+pdf=1 klloss div:  1 1 tensor(12.0321, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([65536])
+pdf=1 klloss div:  1 1 tensor(12.0321, device='cuda:0', dtype=torch.float64)
+(cyclegan_clone_29_3) apoorvkumar@apoorvkumar-Nitro-AN515-45:~/shivi/Phd/Project/patch_TSNE/prob_dist2$ /home/apoorvkumar/anaconda3/envs/cyclegan_clone_29_3/bin/python /home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/models/get_kl_divergence.py
+_CudaDeviceProperties(name='NVIDIA GeForce RTX 3060 Laptop GPU', major=8, minor=6, total_memory=5946MB, multi_processor_count=30)
+div shape torch.Size([65536])
+pdf=1 klloss div:  1 1 tensor(12.0321, device='cuda:0', dtype=torch.float64)

@@ -243,7 +243,7 @@ class CycleGANModel(BaseModel):
             self.loss_wt_hist_B = get_divergence(self.real_B, self.rec_B, pdf=3, klloss=opt.klloss) * coeff
             sum = sum + self.loss_wt_hist_A + self.loss_wt_hist_B
         if "4" in pdf_list:
-            coeff = 100
+            coeff = 200
             self.loss_img_pdf_A = get_divergence(self.real_A, self.rec_A, pdf=4, klloss=opt.klloss) * coeff
             self.loss_img_pdf_B = get_divergence(self.real_B, self.rec_B, pdf=4, klloss=opt.klloss) * coeff
             sum = sum + self.loss_img_pdf_A + self.loss_img_pdf_B
