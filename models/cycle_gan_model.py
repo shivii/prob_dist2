@@ -63,7 +63,7 @@ class CycleGANModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         ############TSNE changes
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
-        self.initialise_pdf_losses(opt)
+        
         
         
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
@@ -334,6 +334,8 @@ class CycleGANModel(BaseModel):
         get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1, agg="mean")
         pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
         """
+
+        self.initialise_pdf_losses(opt)
         total_pdf_divergence = self.compute_pdf_losses(opt)
    
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + total_pdf_divergence
