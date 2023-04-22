@@ -221,7 +221,7 @@ class CycleGANModel(BaseModel):
         loss = nn.BCEWithLogitsLoss()
         self.loss_log_A = loss(real_A, recreated_A) * coeff
         self.loss_log_B = loss(real_B, recreated_B) * coeff
-        sum = self.log_A + self.log_B
+        sum = self.loss_log_A + self.loss_log_B
         return sum
 
     def compute_pdf_losses(self, opt):
