@@ -219,12 +219,12 @@ class CycleGANModel(BaseModel):
 
     def get_log_loss(self, real_A, recreated_A, real_B, recreated_B, coeff):
         loss = nn.BCEWithLogitsLoss()
-        self.log_A = loss(real_A, recreated_A) * coeff
-        self.log_B = loss(real_B, recreated_B) * coeff
+        self.loss_log_A = loss(real_A, recreated_A) * coeff
+        self.loss_log_B = loss(real_B, recreated_B) * coeff
         sum = self.log_A + self.log_B
         return sum
 
-    def compute_pdf_losses(self, opt, img1, img2):
+    def compute_pdf_losses(self, opt):
         pdf_list = opt.which_pdf.split(",")
         sum = 0
         if "1" in pdf_list:
@@ -334,7 +334,7 @@ class CycleGANModel(BaseModel):
         get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1, agg="mean")
         pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
         """
-        total_pdf_divergence = self.compute_pdf_losses(opt, self.real_A, self.rec_A)
+        total_pdf_divergence = self.compute_pdf_losses(opt)
    
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + total_pdf_divergence
         

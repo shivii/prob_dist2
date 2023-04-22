@@ -582,10 +582,10 @@ if __name__ == '__main__':
     #print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
 
 
-
+    print("image values", image2.min(), image2.max())
     """ BCE logistsloss"""
     loss = nn.BCEWithLogitsLoss()
-    out = loss(0.5, 1)
+    out = loss(image1, image2)
     print(out)
 
  
