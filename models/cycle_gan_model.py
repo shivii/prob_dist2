@@ -4,7 +4,7 @@ from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
 from models.utility import print_with_time as print
-
+import torch.nn as nn
 from models.get_kl_divergence import get_divergence
 from math import log
 ##############TSNE changes
@@ -211,6 +211,17 @@ class CycleGANModel(BaseModel):
             self.loss_hist_pat_B = 0
             self.loss_names.append("hist_pat_A")
             self.loss_names.append("hist_pat_B")
+        if "6" in pdf_list:
+            self.loss_log_A = 0
+            self.loss_log_B = 0
+            self.loss_names.append("log_A")
+            self.loss_names.append("log_B")
+
+    def get_log_loss(self, real_A, recreated_A, real_B, recreated_B, coeff):
+        self.log_A = nn.BCEWithLogitsLoss(real_A, recreated_A) * coeff
+        self.log_B = nn.BCEWithLogitsLoss(real_B, recreated_B) * coeff
+        sum = self.log_A + self.log_B
+        return sum
 
     def compute_pdf_losses(self, opt, img1, img2):
         pdf_list = opt.which_pdf.split(",")
@@ -240,10 +251,15 @@ class CycleGANModel(BaseModel):
             self.loss_hist_pat_A = get_divergence(self.real_A, self.rec_A, pdf=5, klloss=opt.klloss) * coeff
             self.loss_hist_pat_B = get_divergence(self.real_B, self.rec_B, pdf=5, klloss=opt.klloss) * coeff
             sum = sum + self.loss_hist_pat_A + self.loss_hist_pat_B
+        if "6" in pdf_list:
+            coeff = 10
+            total_log_loss = self.get_log_loss(self.real_A, self.rec_A, self.real_B, self.rec_B, coeff)
+            sum = sum + total_log_loss
         
         return sum
         
-    
+
+
 
 
     def backward_G(self, opt):

@@ -479,6 +479,7 @@ def calculate_pdf_image_patch(r, g, b, kernel):
 
     return prob_r, prob_g, prob_b
 
+
 def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     """
     Main functions 
@@ -531,6 +532,7 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
         prob1_r, prob1_g, prob1_b = calculate_pdf_image_patch(r1, g1, b1, patch)
         prob2_r, prob2_g, prob2_b = calculate_pdf_image_patch(r2, g2, b2, patch)
 
+
     #print("prob_r shape", prob1_r.shape)
     
     #get Divergence
@@ -575,8 +577,15 @@ if __name__ == '__main__':
 
     pdf = 2
     klloss=2
-    div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
+    #div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
 
-    print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
+    #print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
+
+
+
+    """ BCE logistsloss"""
+    loss = nn.BCEWithLogitsLoss()
+    out = loss(0.5, 1)
+    print(out)
 
  
