@@ -218,8 +218,9 @@ class CycleGANModel(BaseModel):
             self.loss_names.append("log_B")
 
     def get_log_loss(self, real_A, recreated_A, real_B, recreated_B, coeff):
-        self.log_A = nn.BCEWithLogitsLoss(real_A, recreated_A) * coeff
-        self.log_B = nn.BCEWithLogitsLoss(real_B, recreated_B) * coeff
+        loss = nn.BCEWithLogitsLoss()
+        self.log_A = loss(real_A, recreated_A) * coeff
+        self.log_B = loss(real_B, recreated_B) * coeff
         sum = self.log_A + self.log_B
         return sum
 
