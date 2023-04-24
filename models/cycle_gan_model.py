@@ -6,6 +6,7 @@ from . import networks
 from models.utility import print_with_time as print
 import torch.nn as nn
 from models.get_kl_divergence import get_divergence
+from models.get_kl_divergence import adversarial_js
 from math import log
 ##############TSNE changes
 
@@ -154,23 +155,22 @@ class CycleGANModel(BaseModel):
         """
         # Real
         pred_real = netD(real)
+        print("discriminator output real", pred_real.shape)
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
         pred_fake = netD(fake.detach())
+        print("discriminator output fake", pred_fake.shape)
         loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
         # Combined loss and calculate gradients
-
         """
+        # Combined loss and calculate gradients
         if opt.advloss == 0:
-            div_js = js_div.detach() * self.alpha_js
-            loss_D = (loss_D_real + loss_D_fake) * 0.5 + div_js
+            loss_D_real_js = adversarial_js(pred_real, True)
+            loss_D_fake_js = adversarial_js(pred_fake, False)
         else:
             loss_D = (loss_D_real + loss_D_fake)
         """
-        # Combined loss and calculate gradients
-        
         loss_D = (loss_D_real + loss_D_fake)
-        #print("loss_D_fake Original vs kl",  loss_D_fake, loss_D_fake)
         loss_D.backward()
         return loss_D
 
@@ -299,8 +299,10 @@ class CycleGANModel(BaseModel):
         #if opt.advloss != 0:
         # GAN loss D_A(G_A(A))
         self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
+        print("generator output fake_B", self.netD_A(self.fake_B).shape)
         # GAN loss D_B(G_B(B))
         self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
+        print("generator output fake_A", self.netD_A(self.fake_A).shape)
     
         # GAN loss 
         # GAN loss D_A(G_A(A))
