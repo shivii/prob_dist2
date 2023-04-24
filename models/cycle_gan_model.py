@@ -6,7 +6,7 @@ from . import networks
 from models.utility import print_with_time as print
 import torch.nn as nn
 from models.get_kl_divergence import get_divergence
-from models.get_kl_divergence import adversarial_js
+#from models.get_kl_divergence import adversarial_js
 from math import log
 ##############TSNE changes
 
