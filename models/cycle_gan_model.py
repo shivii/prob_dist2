@@ -156,10 +156,12 @@ class CycleGANModel(BaseModel):
         # Real
         pred_real = netD(real)
         print("discriminator output real", pred_real.shape)
+        print("discriminator output real min max", pred_real.min(),pred_real.max())
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
         pred_fake = netD(fake.detach())
         print("discriminator output fake", pred_fake.shape)
+        print("discriminator output fake min max", pred_fake.min(),pred_fake.max())
         loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
         # Combined loss and calculate gradients
         """
