@@ -256,7 +256,6 @@ Utility functions
 Calculate PDF of gaussian distributions of every pixel with its neighbors
 """
 def calculate_pdf_gaussian(image, kernel, sigma):
-    #print("gaussian begin")
     no_of_neigh = kernel*kernel
     padding = math.floor(kernel/2)
 
@@ -267,23 +266,15 @@ def calculate_pdf_gaussian(image, kernel, sigma):
     # step3 build flattened repeated rgb tensor
     repeated = get_flattened_and_repeated(image,no_of_neigh)
 
-    #print("in gauss: repeated neigh r shape:", repeated_r.shape)
     # step4: Xi - Xj i.e : subtract repeated_r and neigh_r
-
     diff = neigh - repeated
-
     diff_squared = torch.pow(diff, 2) 
 
     #normalised_diff_squared_sum = torch.nn.functional.normalize(diff_squared_sum, p=2.0, dim=1)
-    
     sum_normalised_with_sigma = diff_squared/(2*sigma*sigma)
-
     gaussian_space = torch.exp(-sum_normalised_with_sigma)
-
     gaussian_nieghbourhood_sums = gaussian_space.sum(dim=2)
-
     gaussian_nieghbourhood_sums_repeated = gaussian_nieghbourhood_sums.unsqueeze(2)
-
     gaussian_distribution = gaussian_space/gaussian_nieghbourhood_sums_repeated
 
     return gaussian_distribution.squeeze(0)
@@ -425,62 +416,50 @@ def calculate_pdf_image_patch(image, kernel):
 
     return prob
 
-def get_divergence_1channel(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
-    """
-    Main functions 
-    1. Gaussian pdf
-    2. Histogram pdf
-    3. Weighted histogram pdf
-    4. Image pdf
-    5. Image pdf for patches
-
+def get_adversarial_loss(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
+    """ Initialize the GANLoss class.
+    Parameters:
+        prediction (tensor) - - tpyically the prediction from a discriminator
+        target_is_real (bool) - - if the ground truth label is for real images or fake images
+        PDF:
+            Main functions 
+            1. Gaussian pdf
+            2. Histogram pdf
+            3. Weighted histogram pdf
+            4. Image pdf
+            5. Image pdf for patches
     options:
     input images: input1, input2
     kernel sizes: 3,5 for 1,2,3; 8,16,.. for 4
     kl_or_js: "kl" for KL divergence; "js" for JS divergence
     """
-    #get options
-    #pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
-
-    if klloss == 0:
-        return 0 # when we donot want to compute divergence
-
-    """
-    Denormalize image
-    """
-    de_image1 = denorm(image1).to(float)
-    de_image2 = denorm(image2).to(float)
-
-    print("shape of image received : ", image1.shape)
-    print("shape of dnorm Image : ", de_image1.shape)
-
-    #get pdf of images
-    if pdf == 1:
-        prob1 = calculate_pdf_gaussian(de_image1, kernel, sigma)
-        prob2 = calculate_pdf_gaussian(de_image2, kernel, sigma)
-    elif pdf == 2:
-        prob1 = calculate_pdf_histogram(de_image1, kernel)
-        prob2 = calculate_pdf_histogram(de_image2, kernel)
-    elif pdf == 3:
-        prob1 = calculate_pdf_weighted_hist(de_image1, kernel)
-        prob2 = calculate_pdf_weighted_hist(de_image2, kernel)
-    elif pdf == 4:
-        prob1 = calculate_pdf_image(image1)
-        prob2 = calculate_pdf_image(image2)
-    elif pdf == 5:
-        prob1 = calculate_pdf_image_patch(de_image1, patch)
-        prob2 = calculate_pdf_image_patch(de_image2, patch)
-
-
-    #print("prob_r shape", prob1_r.shape)
     
-    #get Divergence
-    if klloss == 1:
-        div = get_KLDiv(prob1, prob2, pdf)
-    elif klloss == 2:
-        div = get_JSDiv(prob1, prob2, pdf)
+    #get pdf of image
+    if pdf == 1:
+        prob = calculate_pdf_gaussian(image, kernel, sigma)
+    elif pdf == 2:
+        prob = calculate_pdf_histogram(image, kernel)
+    elif pdf == 3:
+        prob = calculate_pdf_weighted_hist(image, kernel)
+    elif pdf == 4:
+        prob = calculate_pdf_image(image)        
+    elif pdf == 5:
+        prob = calculate_pdf_image_patch(image, patch)
 
-    return div.mean()
+    #get Divergence
+
+    eps = 1e-12
+    if target_is_real:
+        m = torch.ones_like(prob) * 0.5
+    else:
+        m = torch.zeros_like(prob) * 0.5
+
+    m = m.to(device)
+    js_divergence = get_JSDiv(prob, m, pdf)
+    adversarial_loss = -torch.log(js_divergence + eps)
+    
+    return adversarial_loss.mean()
+
 
 
 
@@ -495,22 +474,31 @@ if __name__ == '__main__':
     input_image1 = Image.open("/home/apoorvkumar/shivi/Phd/Project/data/struck_padded/trainA/2.png")
     input_image2 = Image.open("/home/apoorvkumar/shivi/Phd/Project/data/struck_padded/trainA/5.png")
 
+    r1 = -2 
+    r2 = 2
+    a = 30
+    b = 30
+    img1 = (r1 - r2) * torch.rand(a,b) + r2
+    img1 = img1.unsqueeze(0)
+    img2 = (r1 - r2) * torch.rand(a,b) + r2
+    img2 = img2.unsqueeze(0)
+    #print("img shape",img1.shape, img2.shape)
+
+
+
     """
     Normalise image
     """
     trans = transforms.Compose([
-                transforms.Resize((256,256)),
+                transforms.ToPILImage(),
                 transforms.ToTensor(),
-                transforms.Normalize((0.5), (0.5)),
                 ])
-    image1 = trans(input_image1).to(device)
-    image2 = trans(input_image2).to(device)
+    image1 = trans(img1).to(device)
+    image2 = trans(img2).to(device)
 
-    pdf =3
-    klloss=2
-    div = get_divergence_1channel(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
+    pdf = 1
+    klloss = 2
+    div = get_adversarial_loss(img1.unsqueeze(0).to(device),True, pdf)
 
-    print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
-
-
- 
+    print("pdf=1 klloss div: ",pdf, klloss, div) 
+    

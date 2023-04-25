@@ -549,8 +549,26 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     return div.mean()
 
 
+def get_target_tensor(prediction, target_is_real):
+    """Create label tensors with the same size as the input.
 
+    Parameters:
+        prediction (tensor) - - tpyically the prediction from a discriminator
+        target_is_real (bool) - - if the ground truth label is for real images or fake images
 
+    Returns:
+        A label tensor filled with ground truth label, and with the size of the input
+    """
+    target_real_label = 1.0
+    target_fake_label = 0.0
+    real_label = torch.tensor(target_real_label)
+    fake_label = torch.tensor(target_fake_label)
+
+    if target_is_real:
+        target_tensor = real_label
+    else:
+        target_tensor = fake_label
+    return target_tensor.expand_as(prediction)
 
 
 if __name__ == '__main__':
@@ -564,10 +582,18 @@ if __name__ == '__main__':
     input_image1 = Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1160_real_B.png")
     input_image2 = Image.open("/home/apoorvkumar/shivi/Phd/Project/patch_TSNE/prob_dist2/test_runners/1160_rec_B.png")
 
-
+    r1 = -2 
+    r2 = 2
+    a = 30
+    b = 30
+    img1 = (r1 - r2) * torch.rand(a,b) + r2
+    img1 = img1.unsqueeze(0).unsqueeze(0)
+    img2 = (r1 - r2) * torch.rand(a,b) + r2
+    img2 = img2.unsqueeze(0).unsqueeze(0)
+    print("img shape",img1.shape, img2.shape)
     """
     Normalise image
-    """
+    
     trans = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
@@ -575,17 +601,9 @@ if __name__ == '__main__':
     image1 = trans(input_image1).to(device)
     image2 = trans(input_image2).to(device)
 
-    pdf = 2
+    pdf = 3
     klloss=2
-    #div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
+    div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
 
-    #print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
-
-
-    print("image values", image2.min(), image2.max())
-    """ BCE logistsloss"""
-    loss = nn.BCEWithLogitsLoss()
-    out = loss(image1, image2)
-    print(out)
-
- 
+    print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
+    """

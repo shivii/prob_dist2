@@ -6,7 +6,7 @@ from . import networks
 from models.utility import print_with_time as print
 import torch.nn as nn
 from models.get_kl_divergence import get_divergence
-#from models.get_kl_divergence import adversarial_js
+from models.get_kl_1channel import get_adversarial_loss
 from math import log
 ##############TSNE changes
 
@@ -155,24 +155,27 @@ class CycleGANModel(BaseModel):
         """
         # Real
         pred_real = netD(real)
+        pred_real_sft = pred_real
         print("discriminator output real", pred_real.shape)
-        print("discriminator output real min max", pred_real.min(),pred_real.max())
+        #print("discriminator output real min max", pred_real.min(),pred_real.max())
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
         pred_fake = netD(fake.detach())
         print("discriminator output fake", pred_fake.shape)
-        print("discriminator output fake min max", pred_fake.min(),pred_fake.max())
+        #print("discriminator output fake min max", pred_fake.min(),pred_fake.max())
         loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
         # Combined loss and calculate gradients
-        """
+        
         # Combined loss and calculate gradients
         if opt.advloss == 0:
-            loss_D_real_js = adversarial_js(pred_real, True)
-            loss_D_fake_js = adversarial_js(pred_fake, False)
+            "In gaussian adv loss-----------------Dis"
+            loss_D_real_js = get_adversarial_loss(pred_real, True, pdf=1)
+            loss_D_fake_js = get_adversarial_loss(pred_fake, False,pdf=1)
+            loss_D = (loss_D_real_js + loss_D_fake_js)
         else:
             loss_D = (loss_D_real + loss_D_fake)
-        """
-        loss_D = (loss_D_real + loss_D_fake)
+        
+        #loss_D = (loss_D_real + loss_D_fake)
         loss_D.backward()
         return loss_D
 
@@ -298,20 +301,21 @@ class CycleGANModel(BaseModel):
             self.loss_idt_B = 0
 
         """Adversarial loss"""
-        #if opt.advloss != 0:
-        # GAN loss D_A(G_A(A))
-        self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
-        print("generator output fake_B", self.netD_A(self.fake_B).shape)
-        # GAN loss D_B(G_B(B))
-        self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
-        print("generator output fake_A", self.netD_A(self.fake_A).shape)
-    
-        # GAN loss 
-        # GAN loss D_A(G_A(A))
-        #self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) + #js_div_A_B * self.alpha_js
-        # GAN loss D_B(G_B(B))
-        #self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) + #js_div_B_A * self.alpha_js
-
+        if opt.advloss == 0:
+            "In gaussian adv loss-----------------Gen"
+            # GAN loss D_A(G_A(A))
+            self.loss_G_A = get_adversarial_loss(self.netD_A(self.fake_B), True, pdf=1) 
+            print("generator output fake_B", self.netD_A(self.fake_B).shape)
+            # GAN loss D_B(G_B(B))
+            self.loss_G_B = get_adversarial_loss(self.netD_B(self.fake_A), True, pdf=1) 
+            print("generator output fake_A", self.netD_A(self.fake_A).shape)
+        else:
+            # GAN loss D_A(G_A(A))
+            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
+            print("generator output fake_B", self.netD_A(self.fake_B).shape)
+            # GAN loss D_B(G_B(B))
+            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
+            print("generator output fake_A", self.netD_A(self.fake_A).shape)     
 
         """print both GAN loss:"""
         #print("GAN loss:", self.loss_G_A, self.loss_G_B)
