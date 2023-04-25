@@ -416,7 +416,7 @@ def calculate_pdf_image_patch(image, kernel):
 
     return prob
 
-def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
+def get_pdf(image, pdf, kernel=3, patch=8, sigma=1):
     """ Initialize the GANLoss class.
     Parameters:
         prediction (tensor) - - tpyically the prediction from a discriminator
@@ -433,6 +433,7 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
     kernel sizes: 3,5 for 1,2,3; 8,16,.. for 4
     kl_or_js: "kl" for KL divergence; "js" for JS divergence
     """
+    print("in get pdf: ", image.shape)
     trans = transforms.Compose([
                 transforms.ToPILImage(),
                 transforms.ToTensor(),

@@ -136,11 +136,12 @@ class CycleGANModel(BaseModel):
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
 
-    def get_adv_loss(self, pred_real, target_is_real, pdf=1):
-            
+    def get_adv_loss(self, pred, target_is_real, pdf=1):
+            print("in get adv loss image shape:", pred.shape)
             #get pdf of image
             if pdf == 1:
-                prob = div.get_pdf(pred_real, target_is_real, pdf)
+                prob = div.get_pdf(pred, pdf)
+            print("in get_adv loss prob shape:", prob.shape)
             eps = 1e-12
             if target_is_real:
                 m = torch.ones_like(prob) * 0.5
@@ -322,12 +323,14 @@ class CycleGANModel(BaseModel):
         """Adversarial loss"""
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Gen"
+            pred_fake_A = self.netD_A(self.fake_B)
+            pred_fake_B = self.netD_B(self.fake_A)
             # GAN loss D_A(G_A(A))
-            self.loss_G_A = self.get_adv_loss(self.netD_A(self.fake_B), True, pdf=1) 
-            print("generator output fake_B", self.netD_A(self.fake_B).shape)
+            self.loss_G_A = self.get_adv_loss(pred_fake_A, True, pdf=1) 
+            print("generator output fake_B", pred_fake_A.shape)
             # GAN loss D_B(G_B(B))
-            self.loss_G_B = self.get_adv_loss(self.netD_B(self.fake_A), True, pdf=1) 
-            print("generator output fake_A", self.netD_A(self.fake_A).shape)
+            self.loss_G_B = self.get_adv_loss(pred_fake_B, True, pdf=1) 
+            print("generator output fake_A", pred_fake_B.shape)
         else:
             # GAN loss D_A(G_A(A))
             self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
