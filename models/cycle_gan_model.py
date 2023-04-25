@@ -138,7 +138,7 @@ class CycleGANModel(BaseModel):
 
     def get_adv_loss(self, pred, target_is_real, pdf=1):
             #get pdf of image
-            prob = div.get_pdf(pred, pdf)
+            prob = div.get_pdf(pred.clone().detach(), pdf)
             eps = 1e-12
             if target_is_real:
                 target = torch.ones_like(prob) * 0.5
