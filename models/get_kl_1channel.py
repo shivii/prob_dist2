@@ -434,12 +434,13 @@ def get_pdf(image, pdf, kernel=3, patch=8, sigma=1):
     kl_or_js: "kl" for KL divergence; "js" for JS divergence
     """
     print("in get pdf: ", image.shape)
+    image = image.squeeze(0)
     trans = transforms.Compose([
                 transforms.ToPILImage(),
                 transforms.ToTensor(),
                 ])
     image = trans(image)
-    image = image.squeeze(0)
+    
     print("in get pdf image shape after squeeze: ", image.shape)
     #get pdf of image
     if pdf == 1:
