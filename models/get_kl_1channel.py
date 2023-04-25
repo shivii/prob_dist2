@@ -434,6 +434,7 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
     kl_or_js: "kl" for KL divergence; "js" for JS divergence
     """
     trans = transforms.Compose([
+                transforms.ToPILImage(),
                 transforms.ToTensor(),
                 ])
     #get pdf of image
