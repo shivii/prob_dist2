@@ -140,7 +140,7 @@ class CycleGANModel(BaseModel):
             
             #get pdf of image
             if pdf == 1:
-                prob = div.get_pdf(pred_real, pdf)
+                prob = div.get_pdf(pred_real, target_is_real, pdf)
             eps = 1e-12
             if target_is_real:
                 m = torch.ones_like(prob) * 0.5
