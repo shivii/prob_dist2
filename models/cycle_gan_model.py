@@ -152,7 +152,7 @@ class CycleGANModel(BaseModel):
         
             #get Divergence
                 # step4 joint distribution of 2 tensors
-            m = (prob + m) * 0.5
+            m = (prob + target) * 0.5
 
             # step5 compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
             kl_real_target = (prob) * ((prob)/(m)).log()
