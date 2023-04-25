@@ -437,6 +437,7 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
                 transforms.ToPILImage(),
                 transforms.ToTensor(),
                 ])
+    image = trans(image).squeeze(0)
     #get pdf of image
     if pdf == 1:
         prob = calculate_pdf_gaussian(trans(image), kernel, sigma)
