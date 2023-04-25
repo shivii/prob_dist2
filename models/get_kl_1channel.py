@@ -447,7 +447,7 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
         prob = calculate_pdf_image_patch(image, patch)
 
    
-    return pdf.mean()
+    return pdf
 
 
 
