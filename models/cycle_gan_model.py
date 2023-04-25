@@ -138,7 +138,7 @@ class CycleGANModel(BaseModel):
 
     def get_adv_loss(self, pred, target_is_real, pdf=1):
             #get pdf of image
-            prob = div.get_pdf(pred.clone().detach(), pdf)
+            prob = div.get_pdf(pred.detach(), pdf)
             eps = 1e-12
             if target_is_real:
                 target = torch.ones_like(prob) * 0.5
@@ -182,22 +182,17 @@ class CycleGANModel(BaseModel):
         # Real
         pred_real = netD(real)
         pred_real_sft = pred_real
-        #print("discriminator output real", pred_real.shape)
-        #print("discriminator output real min max", pred_real.min(),pred_real.max())
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
         pred_fake = netD(fake.detach())
-        #print("discriminator output fake", pred_fake.shape)
-        #print("discriminator output fake min max", pred_fake.min(),pred_fake.max())
         loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
-        # Combined loss and calculate gradients
-        
+
         # Combined loss and calculate gradients
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Dis"
             loss_D_real_js = self.get_adv_loss(pred_real, True, pdf=1)
             loss_D_fake_js = self.get_adv_loss(pred_fake, False,pdf=1)
-            loss_D = (loss_D_real_js + loss_D_fake_js)
+            loss_D = (loss_D_real_js + loss_D_fake_js).requires_grad(True)
         else:
             loss_D = (loss_D_real + loss_D_fake)
         
