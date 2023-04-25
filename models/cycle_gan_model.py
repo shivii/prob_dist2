@@ -167,7 +167,7 @@ class CycleGANModel(BaseModel):
         # Combined loss and calculate gradients
         if opt.advloss == 0:
             #print("In gaussian adv loss-----------------Dis")
-            loss_D = self.get_adv.adv_loss_disc(pred_real, pred_fake) * 20
+            loss_D = self.get_adv.adv_loss_disc(pred_real, pred_fake) * 200
         else:
             loss_D = (loss_D_real + loss_D_fake) 
         
