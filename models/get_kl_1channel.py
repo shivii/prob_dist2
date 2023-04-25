@@ -435,7 +435,7 @@ def get_pdf(image, pdf, kernel=3, patch=8, sigma=1):
     kernel sizes: 3,5 for 1,2,3; 8,16,.. for 4
     kl_or_js: "kl" for KL divergence; "js" for JS divergence
     """
-    print("in get pdf: ", image.shape)
+    #print("in get pdf: ", image.shape)
     image = image.squeeze(0)
     trans = transforms.Compose([
                 transforms.ToPILImage(),
@@ -443,7 +443,7 @@ def get_pdf(image, pdf, kernel=3, patch=8, sigma=1):
                 ])
     image = trans(image)
     
-    print("in get pdf image shape after squeeze: ", image.shape)
+    #print("in get pdf image shape after squeeze: ", image.shape)
     #get pdf of image
     if pdf == 1:
         prob = calculate_pdf_gaussian(image, kernel, sigma)
@@ -456,7 +456,7 @@ def get_pdf(image, pdf, kernel=3, patch=8, sigma=1):
     elif pdf == 5:
         prob = calculate_pdf_image_patch(image, patch)
 
-    print("PDF shape:", prob.shape)
+    #print("PDF shape:", prob.shape)
     return prob
 
 

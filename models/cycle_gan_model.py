@@ -137,10 +137,8 @@ class CycleGANModel(BaseModel):
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
 
     def get_adv_loss(self, pred, target_is_real, pdf=1):
-            print("in get adv loss image shape:", pred.shape)
             #get pdf of image
             prob = div.get_pdf(pred.clone().detach(), pdf)
-            print("in get_adv loss prob shape:", prob.shape)
             eps = 1e-12
             if target_is_real:
                 target = torch.ones_like(prob) * 0.5
@@ -184,12 +182,12 @@ class CycleGANModel(BaseModel):
         # Real
         pred_real = netD(real)
         pred_real_sft = pred_real
-        print("discriminator output real", pred_real.shape)
+        #print("discriminator output real", pred_real.shape)
         #print("discriminator output real min max", pred_real.min(),pred_real.max())
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
         pred_fake = netD(fake.detach())
-        print("discriminator output fake", pred_fake.shape)
+        #print("discriminator output fake", pred_fake.shape)
         #print("discriminator output fake min max", pred_fake.min(),pred_fake.max())
         loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
         # Combined loss and calculate gradients
@@ -335,17 +333,17 @@ class CycleGANModel(BaseModel):
             pred_fake_B = self.netD_B(self.fake_A)
             # GAN loss D_A(G_A(A))
             self.loss_G_A = self.get_adv_loss(pred_fake_A, True, pdf=1) 
-            print("generator output fake_B", pred_fake_A.shape)
+            #print("generator output fake_B", pred_fake_A.shape)
             # GAN loss D_B(G_B(B))
             self.loss_G_B = self.get_adv_loss(pred_fake_B, True, pdf=1) 
-            print("generator output fake_A", pred_fake_B.shape)
+            #print("generator output fake_A", pred_fake_B.shape)
         else:
             # GAN loss D_A(G_A(A))
             self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
-            print("generator output fake_B", self.netD_A(self.fake_B).shape)
+            #print("generator output fake_B", self.netD_A(self.fake_B).shape)
             # GAN loss D_B(G_B(B))
             self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
-            print("generator output fake_A", self.netD_A(self.fake_A).shape)     
+            #print("generator output fake_A", self.netD_A(self.fake_A).shape)     
 
         """print both GAN loss:"""
         #print("GAN loss:", self.loss_G_A, self.loss_G_B)
