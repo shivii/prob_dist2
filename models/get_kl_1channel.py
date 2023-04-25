@@ -457,7 +457,7 @@ def get_pdf(image, pdf, kernel=3, patch=8, sigma=1):
         prob = calculate_pdf_image_patch(image, patch)
 
     print("PDF shape:", prob.shape)
-    return pdf
+    return prob
 
 
 
