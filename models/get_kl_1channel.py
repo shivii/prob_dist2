@@ -446,19 +446,8 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
     elif pdf == 5:
         prob = calculate_pdf_image_patch(image, patch)
 
-    #get Divergence
-
-    eps = 1e-12
-    if target_is_real:
-        m = torch.ones_like(prob) * 0.5
-    else:
-        m = torch.zeros_like(prob) * 0.5
-
-    m = m.to(device)
-    js_divergence = get_JSDiv(prob, m, pdf)
-    adversarial_loss = -torch.log(js_divergence + eps)
-    
-    return adversarial_loss.mean()
+   
+    return pdf.mean()
 
 
 
