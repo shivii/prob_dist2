@@ -190,9 +190,9 @@ class CycleGANModel(BaseModel):
         # Combined loss and calculate gradients
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Dis"
-            loss_D_real_js = self.get_adv_loss(pred_real, True, pdf=1)
-            loss_D_fake_js = self.get_adv_loss(pred_fake, False,pdf=1)
-            loss_D = (loss_D_real_js + loss_D_fake_js).requires_grad(True)
+            loss_D_real = self.get_adv_loss(pred_real, True, pdf=1)
+            loss_D_fake = self.get_adv_loss(pred_fake, False,pdf=1)
+            loss_D = (loss_D_real + loss_D_fake)
         else:
             loss_D = (loss_D_real + loss_D_fake)
         
