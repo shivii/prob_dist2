@@ -440,7 +440,7 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
     image = trans(image).squeeze(0)
     #get pdf of image
     if pdf == 1:
-        prob = calculate_pdf_gaussian(trans(image), kernel, sigma)
+        prob = calculate_pdf_gaussian(image, kernel, sigma)
     elif pdf == 2:
         prob = calculate_pdf_histogram(image, kernel)
     elif pdf == 3:
