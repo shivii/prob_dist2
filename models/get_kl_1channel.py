@@ -433,10 +433,12 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
     kernel sizes: 3,5 for 1,2,3; 8,16,.. for 4
     kl_or_js: "kl" for KL divergence; "js" for JS divergence
     """
-    
+    trans = transforms.Compose([
+                transforms.ToTensor(),
+                ])
     #get pdf of image
     if pdf == 1:
-        prob = calculate_pdf_gaussian(image, kernel, sigma)
+        prob = calculate_pdf_gaussian(trans(image), kernel, sigma)
     elif pdf == 2:
         prob = calculate_pdf_histogram(image, kernel)
     elif pdf == 3:
@@ -446,7 +448,7 @@ def get_pdf(image, target_is_real, pdf, kernel=3, patch=8, sigma=1):
     elif pdf == 5:
         prob = calculate_pdf_image_patch(image, patch)
 
-   
+    print("PDF shape:", prob.shape)
     return pdf
 
 
