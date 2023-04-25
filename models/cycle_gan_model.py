@@ -6,7 +6,7 @@ from . import networks
 from models.utility import print_with_time as print
 import torch.nn as nn
 from models.get_kl_divergence import get_divergence
-from models.get_kl_1channel import get_adversarial_loss
+import models.get_kl_1channel as div
 from math import log
 ##############TSNE changes
 
@@ -135,6 +135,25 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
+
+    def get_adv_loss(self, pred_real, target_is_real, pdf=1):
+            
+            #get pdf of image
+            if pdf == 1:
+                prob = div.get_pdf(pred_real, pdf)
+            eps = 1e-12
+            if target_is_real:
+                m = torch.ones_like(prob) * 0.5
+            else:
+                m = torch.zeros_like(prob) * 0.5
+
+            m = m.to(self.device)
+        
+            #get Divergence
+            js_divergence = div.get_JSDiv(prob, m, pdf)
+            adversarial_loss = -torch.log(js_divergence + eps)
+            
+            return adversarial_loss.mean()
         
 
     def backward_D_basic(self, netD, real, fake, opt):
@@ -169,8 +188,8 @@ class CycleGANModel(BaseModel):
         # Combined loss and calculate gradients
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Dis"
-            loss_D_real_js = get_adversarial_loss(pred_real, True, pdf=1)
-            loss_D_fake_js = get_adversarial_loss(pred_fake, False,pdf=1)
+            loss_D_real_js = get_adv_loss(pred_real, True, pdf=1)
+            loss_D_fake_js = get_adv_loss(pred_fake, False,pdf=1)
             loss_D = (loss_D_real_js + loss_D_fake_js)
         else:
             loss_D = (loss_D_real + loss_D_fake)
