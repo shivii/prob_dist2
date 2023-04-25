@@ -24,9 +24,9 @@ k is the kernel size
 p is the padding
 """
 def get_neigh(image, k, p):
-    print("calculating neighbours: image shape", image.shape)
+    #print("calculating neighbours: image shape", image.shape)
     image = image.unsqueeze(0)
-    print("calculating neighbours after: image shape", image.shape)
+    #print("calculating neighbours after: image shape", image.shape)
     unfold = nn.Unfold(kernel_size=(k,k), padding=p)
     output = unfold(image)
     swapped_ouput = torch.swapaxes(output, 1, 2)
@@ -62,7 +62,7 @@ def get_pdf(tensor, sigma):
     gaussian_nieghbourhood_sums_repeated = gaussian_nieghbourhood_sums.unsqueeze(2)
     gaussian_distribution = gaussian_space/gaussian_nieghbourhood_sums_repeated
 
-    print(gaussian_distribution.shape)
+    #print(gaussian_distribution.shape)
 
     return gaussian_distribution
 
@@ -96,21 +96,21 @@ def calculate_probability_distribution_histogram(image, sigma, kernel, bins):
     # step2 get histogran of neighbours
     hist = batch_histogram(neigh.long())    
     hist_avg = hist.sum(1)/hist.count_nonzero(dim=1)
-    print("sum", hist_avg.shape)
+    #print("sum", hist_avg.shape)
     repeat_hist_avg = hist_avg.unsqueeze(1).repeat(1,256)
     diff_avg = (hist - repeat_hist_avg)/repeat_hist_avg
     diff_avg[diff_avg==-1] = 0
     diff_avg = diff_avg * repeat_hist_avg
-    print("diff avg:", diff_avg.shape)
+    #print("diff avg:", diff_avg.shape)
     hist_gaussian = torch.exp(-torch.pow(diff_avg, 2)/ (2 * sigma * sigma))
     """remove 1's from hist_gaussian as these represent 0's which are not part of sample space"""
     hist_gaussian[hist_gaussian==1] = 0
-    print("hist_gaussian", hist_gaussian[0])
+    #print("hist_gaussian", hist_gaussian[0])
     gaussian_hist_sums = hist_gaussian.sum(dim=1)
     gaussian_hist_sums_repeated = gaussian_hist_sums.unsqueeze(1)
     gaussian_distribution = hist_gaussian/gaussian_hist_sums_repeated
 
-    print(gaussian_distribution[0])
+    #print(gaussian_distribution[0])
 
 
     # step3 get PDF
@@ -131,7 +131,7 @@ def batch_histogram(data_tensor, num_classes=-1):
         containing histograms of the last dimension D_n of tensor,
         that is, result[d_1,...,d_{n-1}, c] = number of times c appears in tensor[d_1,...,d_{n-1}].
     """
-    print("batch hist shape",data_tensor.shape)
+    #print("batch hist shape",data_tensor.shape)
     batch_hist = torch.nn.functional.one_hot(data_tensor, num_classes).sum(dim=-2)
     min = data_tensor.min()
     max = data_tensor.max()
