@@ -144,15 +144,26 @@ class CycleGANModel(BaseModel):
             print("in get_adv loss prob shape:", prob.shape)
             eps = 1e-12
             if target_is_real:
-                m = torch.ones_like(prob) * 0.5
+                target = torch.ones_like(prob) * 0.5
             else:
-                m = torch.zeros_like(prob) * 0.5
+                target = torch.zeros_like(prob) * 0.5
 
-            m = m.to(self.device)
+            target = target.to(self.device)
         
             #get Divergence
-            js_divergence = div.get_JSDiv(prob, m, pdf)
-            adversarial_loss = -torch.log(js_divergence + eps)
+                # step4 joint distribution of 2 tensors
+            m = (prob + m) * 0.5
+
+            # step5 compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
+            kl_real_target = (prob) * ((prob)/(m)).log()
+            kl_fake_target = (target) * ((target)/(m)).log()
+
+            if pdf == 4:
+                js_div = kl_real_target.sum() * 0.5 + kl_fake_target.sum() * 0.5
+            else:
+                js_div = kl_real_target.sum(dim=1) * 0.5 + kl_fake_target.sum(dim=1) * 0.5
+
+            adversarial_loss = -torch.log(js_div + eps)
             
             return adversarial_loss.mean()
         
