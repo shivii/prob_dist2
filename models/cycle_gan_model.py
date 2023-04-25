@@ -139,21 +139,17 @@ class CycleGANModel(BaseModel):
     def get_adv_loss(self, pred, target_is_real, pdf=1):
             print("in get adv loss image shape:", pred.shape)
             #get pdf of image
-            if pdf == 1:
-                prob = div.get_pdf(pred, pdf)
+            prob = div.get_pdf(pred, pdf)
             print("in get_adv loss prob shape:", prob.shape)
             eps = 1e-12
             if target_is_real:
                 target = torch.ones_like(prob) * 0.5
             else:
                 target = torch.zeros_like(prob) * 0.5
-
-            target = target.to(self.device)
         
             #get Divergence
-                # step4 joint distribution of 2 tensors
+            # joint distribution of 2 tensors
             m = (prob + target) * 0.5
-            m = m.to(self.device)
 
             # step5 compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
             kl_real_target = (prob) * ((prob)/(m)).log()
