@@ -24,7 +24,9 @@ k is the kernel size
 p is the padding
 """
 def get_neigh(image, k, p):
-    #print("calculating neighbours")
+    print("calculating neighbours: image shape", image.shape)
+    image = image.unsqueeze(0)
+    print("calculating neighbours after: image shape", image.shape)
     unfold = nn.Unfold(kernel_size=(k,k), padding=p)
     output = unfold(image)
     swapped_ouput = torch.swapaxes(output, 1, 2)
