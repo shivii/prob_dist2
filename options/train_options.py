@@ -42,7 +42,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--advloss', type=int, default=1, help="adverserial loss is excluded in loss function if passed 0")
         #parser.add_argument('--patch_size', type=int, default=8, help="patch size is the size of patch in computing patch pdf of image")
         parser.add_argument('--which_pdf', type=str, default='2,4', help="comma seperated list of losses 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4")
-        parser.add_argument('--gen_coeff', type=int, default=10, help="coeff : 100")
-        parser.add_argument('--disc_coeff', type=int, default=10, help="coeff : 100")
+        parser.add_argument('--gen_coeff', type=int, default=0.01, help="coeff : 100")
+        parser.add_argument('--disc_coeff', type=int, default=0.01, help="coeff : 100")
         self.isTrain = True
         return parser

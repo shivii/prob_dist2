@@ -101,7 +101,8 @@ class JSD(nn.Module):
         # KL(P_r || M) + KL(P_g || M)
         div = self.get_JSDiv(prob1, prob2)
 
-        adversarial_loss = 2 * div.mean() 
+        adversarial_loss = 2 * div.sum()
+        print(div.shape)
         return adversarial_loss
     
     def adv_loss_gen(self, prediction, target_is_real):
@@ -163,7 +164,7 @@ if __name__ == '__main__':
     image2 = trans(img2).to(device)
 
     loss_D = calc_js.adv_loss(img1.unsqueeze(0).to(device), img2.unsqueeze(0).to(device))
-    loss_G = calc_js.adv_loss_gen(img1.unsqueeze(0).to(device), True)
+    #loss_G = calc_js.adv_loss_gen(img1.unsqueeze(0).to(device), True)
 
 
 
