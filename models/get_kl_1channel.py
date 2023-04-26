@@ -18,7 +18,7 @@ class JSD(nn.Module):
         super(JSD, self).__init__()
         self.kl = nn.KLDivLoss(reduction='batchmean', log_target=True)
 
-    def get_JSDiv(self, real_tensor, fake_tensor, pdf):
+    def get_JSDiv(self, real_tensor, fake_tensor, pdf=1):
         # for any pdf A, adding epsilon avoids 0's in the tensor A
         # to counter the addition of epsilon,
         # (A + epsilon )* 1/ 1+n*epsilon 
