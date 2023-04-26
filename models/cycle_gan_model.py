@@ -167,7 +167,8 @@ class CycleGANModel(BaseModel):
         # Combined loss and calculate gradients
         if opt.advloss == 0:
             #print("In gaussian adv loss-----------------Dis")
-            loss_D = loss_D_real + self.get_adv.adv_loss(pred_real, pred_fake) 
+            div_D = self.get_adv.adv_loss(pred_real, pred_fake) 
+            loss_D = loss_D_real + div_D
         else:
             loss_D = (loss_D_real + loss_D_fake) 
         
@@ -301,10 +302,12 @@ class CycleGANModel(BaseModel):
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Gen"
             # GAN loss D_A(G_A(A))
-            self.loss_G_A = self.get_adv.adv_loss(self.netD_A(self.fake_B), self.netD_A(self.real_A)) 
+            div_G_A = self.get_adv.adv_loss(self.netD_A(self.fake_B), self.netD_A(self.real_A)) 
+            self.loss_G_A = div_G_A
             #print("generator loss fake_B", self.loss_G_A)
             # GAN loss D_B(G_B(B))
-            self.loss_G_B = self.get_adv.adv_loss(self.netD_B(self.fake_A), self.netD_B(self.real_B)) 
+            div_G_B = self.get_adv.adv_loss(self.netD_B(self.fake_A), self.netD_B(self.real_B)) 
+            self.loss_G_B = div_G_B
             #print("generator loss fake_A", self.loss_G_B)
         else:
             # GAN loss D_A(G_A(A))
