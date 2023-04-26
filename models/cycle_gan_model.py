@@ -61,7 +61,7 @@ class CycleGANModel(BaseModel):
             opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseModel.__init__(self, opt)
-        # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
+        # specify the training real_labellosses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         ############TSNE changes
         self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B', 'D_A_ad', 'D_B_ad', 'G_A_ad', 'G_B_ad']
         
@@ -139,7 +139,13 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
-        
+
+    def neutralise_zeros(self, tensor, dim):
+        epsilon = 1e-20
+        tensor = tensor + epsilon
+        tensor = tensor * 1/(1 + dim*dim*epsilon)
+        return tensor
+
     def backward_D_basic(self, netD, real, fake, opt):
         """Calculate GAN loss for the discriminator
 
@@ -162,15 +168,15 @@ class CycleGANModel(BaseModel):
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
         pred_fake = netD(fake.detach())
-        loss_D_fake = self.criterionGAN(pred_fake, False)                                                                                                                                                                               
 
         # Combined loss and calculate gradients
         if opt.advloss == 0:
             print("In gaussian adv loss-----------------Dis")
             div_D = self.get_adv.adv_loss(pred_real, pred_fake) 
-            D_ad = div_D * opt.disc_coeff
+            D_ad = 1/self.neutralise_zeros(div_D * opt.disc_coeff)
             loss_D = loss_D_real + D_ad
         else:
+            loss_D_fake = self.criterionGAN(pred_fake, False)
             loss_D = (loss_D_real + loss_D_fake) 
         
         #loss_D = (loss_D_real + loss_D_fake)
