@@ -105,29 +105,12 @@ class JSD(nn.Module):
         #print(div.shape)
         return adversarial_loss
     
-    def adv_loss_gen(self, prediction, target_is_real):
-        """
-        L_G = - log(4) + log(D(G(z)))
-            = - log(2) + KL(P_g || M)
-        """
-        #print("from adv_gen")
-        prob = self.calculate_pdf_gaussian(prediction)
-        eps = 1e-12
-        if target_is_real:
-            target = torch.ones_like(prob)
-        else:
-            target = torch.zeros_like(prob)
+    def adv_loss_image_pdf(self, pred_real, pred_fake):
+        pred_real = F.softmax(pred_real, dim=2) /30
+        pred_fake = F.softmax(pred_fake, dim=2) /30
 
-
-        p, q = prob.view(-1, prob.size(-1)), target.view(-1, target.size(-1))
-        
-        m = (0.5 * (p + q)).log()
-
-        # KL(P_g || M)
-        div = 0.5 * (self.kl(m, p.log()) + self.kl(m, q.log())) 
-
-        #adversarial_loss = -torch.log(div + eps) 
-        return div
+        div = self.get_JSDiv(pred_real, pred_fake)
+        return div.sum()
 
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -163,11 +146,11 @@ if __name__ == '__main__':
     image1 = trans(img1).to(device)
     image2 = trans(img2).to(device)
 
-    loss_D = calc_js.adv_loss(img1.unsqueeze(0).to(device), img2.unsqueeze(0).to(device))
+    calc_js.adv_loss_image_pdf(img1.unsqueeze(0).to(device), img2.unsqueeze(0).to(device))
     #loss_G = calc_js.adv_loss_gen(img1.unsqueeze(0).to(device), True)
 
 
 
-    print("adv loss: ",loss_D)
+    #print("adv loss: ",loss_D)
 
     
