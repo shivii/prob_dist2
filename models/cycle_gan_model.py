@@ -173,7 +173,7 @@ class CycleGANModel(BaseModel):
             loss_D = (loss_D_real + loss_D_fake) 
         
         #loss_D = (loss_D_real + loss_D_fake)
-        print("loss D is " , loss_D)
+        #print("loss D is " , loss_D)
         loss_D.backward()
         return loss_D
 
@@ -304,11 +304,11 @@ class CycleGANModel(BaseModel):
             # GAN loss D_A(G_A(A))
             div_G_A = self.get_adv.adv_loss(self.netD_A(self.fake_B), self.netD_A(self.real_A)) 
             self.loss_G_A = div_G_A * opt.gen_coeff + self.criterionGAN(self.netD_A(self.fake_B), True) 
-            print("generator loss fake_B", self.loss_G_A)
+            #print("generator loss fake_B", self.loss_G_A)
             # GAN loss D_B(G_B(B))
             div_G_B = self.get_adv.adv_loss(self.netD_B(self.fake_A), self.netD_B(self.real_B)) 
             self.loss_G_B = div_G_B * opt.gen_coeff + self.criterionGAN(self.netD_B(self.fake_A), True) 
-            print("generator loss fake_A", self.loss_G_B)
+            #print("generator loss fake_A", self.loss_G_B)
         else:
             # GAN loss D_A(G_A(A))
             self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 

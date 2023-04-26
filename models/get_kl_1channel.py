@@ -102,7 +102,7 @@ class JSD(nn.Module):
         div = self.get_JSDiv(prob1, prob2)
 
         adversarial_loss = 2 * div.sum()
-        print(div.shape)
+        #print(div.shape)
         return adversarial_loss
     
     def adv_loss_gen(self, prediction, target_is_real):
@@ -110,7 +110,7 @@ class JSD(nn.Module):
         L_G = - log(4) + log(D(G(z)))
             = - log(2) + KL(P_g || M)
         """
-        print("from adv_gen")
+        #print("from adv_gen")
         prob = self.calculate_pdf_gaussian(prediction)
         eps = 1e-12
         if target_is_real:
