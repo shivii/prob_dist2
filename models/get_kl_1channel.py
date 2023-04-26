@@ -18,6 +18,26 @@ class JSD(nn.Module):
         super(JSD, self).__init__()
         self.kl = nn.KLDivLoss(reduction='batchmean', log_target=True)
 
+    def get_JSDiv(self, real_tensor, fake_tensor, pdf):
+        # for any pdf A, adding epsilon avoids 0's in the tensor A
+        # to counter the addition of epsilon,
+        # (A + epsilon )* 1/ 1+n*epsilon 
+        epsilon = 1e-20
+
+        # step4 joint distribution of 2 tensors
+        m = (real_tensor + fake_tensor) * 0.5
+
+        # compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
+        kl_real_fake = (real_tensor) * ((real_tensor)/(m)).log()
+        kl_fake_real = (fake_tensor) * ((fake_tensor)/(m)).log()
+
+        if pdf == 4:
+            js_div = kl_real_fake.sum() * 0.5 + kl_fake_real.sum() * 0.5
+        else:
+            js_div = kl_real_fake.sum(dim=1) * 0.5 + kl_fake_real.sum(dim=1) * 0.5
+
+        return js_div
+
     """
     k is the kernel size
     p is the padding
@@ -68,7 +88,7 @@ class JSD(nn.Module):
         #print("genrating a flattened and repeated tensor")
         return torch.flatten(t).unsqueeze(1).repeat(1,1,n)
     
-    def adv_loss_disc(self, pred_real, pred_fake):
+    def adv_loss(self, pred_real, pred_fake):
         """
         L_D = - log(4) + 2 * log(D(x)) + log(1 - D(G(z)))
             = -log(2) + KL(P_r || M) + KL(P_g || M)
@@ -78,14 +98,10 @@ class JSD(nn.Module):
         prob2 = self.calculate_pdf_gaussian(pred_fake)
         eps = 1e-12
 
-        p, q = prob1.view(-1, prob1.size(-1)), prob2.view(-1, prob2.size(-1))
-        
-        m = (0.5 * (p + q)).log()
-
         # KL(P_r || M) + KL(P_g || M)
-        div = 0.5 * (self.kl(m, p.log()) + self.kl(m, q.log())) 
+        div = self.get_JSDiv(prob1, prob2)
 
-        #adversarial_loss = -torch.log(div + eps) 
+        adversarial_loss = 2 * div 
         return div
     
     def adv_loss_gen(self, prediction, target_is_real):
@@ -93,7 +109,7 @@ class JSD(nn.Module):
         L_G = - log(4) + log(D(G(z)))
             = - log(2) + KL(P_g || M)
         """
-        #print("from adv_gen")
+        print("from adv_gen")
         prob = self.calculate_pdf_gaussian(prediction)
         eps = 1e-12
         if target_is_real:
