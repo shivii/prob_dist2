@@ -101,7 +101,7 @@ class JSD(nn.Module):
         # KL(P_r || M) + KL(P_g || M)
         div = self.get_JSDiv(prob1, prob2)
 
-        adversarial_loss = 2 * div 
+        adversarial_loss = 2 * div.mean() 
         return div
     
     def adv_loss_gen(self, prediction, target_is_real):
