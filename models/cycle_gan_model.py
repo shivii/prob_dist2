@@ -179,9 +179,9 @@ class CycleGANModel(BaseModel):
             loss_D_fake = self.criterionGAN(pred_fake, False)
             loss_D = (loss_D_real + loss_D_fake) 
         
-        #loss_D = (loss_D_real + loss_D_fake)
-        #print("loss D is " , loss_D)
+        print("before bckwd", loss_D)
         loss_D.backward()
+        print("after bckwd", loss_D)
         return loss_D, D_ad
 
     def backward_D_A(self, opt):
