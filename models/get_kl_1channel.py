@@ -28,8 +28,8 @@ class JSD(nn.Module):
         m = (real_tensor + fake_tensor) * 0.5
 
         # compute JS divergence = 0.5 * KL(P||Q) + 0.5 * KL(Q||P)
-        kl_real_fake = (real_tensor) * ((real_tensor)/(m)).log()
-        kl_fake_real = (fake_tensor) * ((fake_tensor)/(m)).log()
+        kl_real_fake = (real_tensor) * ((real_tensor)/(m)).log2()
+        kl_fake_real = (fake_tensor) * ((fake_tensor)/(m)).log2()
 
         if pdf == 4:
             js_div = kl_real_fake.sum() * 0.5 + kl_fake_real.sum() * 0.5
@@ -112,8 +112,9 @@ class JSD(nn.Module):
 
         div = self.get_JSDiv(pred_real, pred_fake)
 
-        adversarial_loss = -torch.log(div.mean() + eps) 
-        return adversarial_loss
+        #adversarial_loss = -torch.log(div.sum() + eps) 
+        #return adversarial_loss
+        return div.sum() 
 
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -126,8 +127,8 @@ if __name__ == '__main__':
     input_image1 = Image.open("/home/apoorvkumar/shivi/Phd/Project/data/struck_padded/trainA/2.png")
     input_image2 = Image.open("/home/apoorvkumar/shivi/Phd/Project/data/struck_padded/trainA/5.png")
 
-    r1 = -2 
-    r2 = 2
+    r1 = -8
+    r2 = 8
     a = 30
     b = 30
     img1 = (r1 - r2) * torch.rand(a,b) + r2
@@ -136,7 +137,8 @@ if __name__ == '__main__':
     img2 = img2.unsqueeze(0)
     print("img shape",img1.shape, img2.shape)
 
-
+    tensor_1 = torch.ones_like(img1)
+    
     calc_js = JSD().to(device)
 
     """
@@ -149,11 +151,8 @@ if __name__ == '__main__':
     image1 = trans(img1).to(device)
     image2 = trans(img2).to(device)
 
-    loss = calc_js.adv_loss_image_pdf(img1.unsqueeze(0).to(device), img2.unsqueeze(0).to(device))
-    #loss_G = calc_js.adv_loss_gen(img1.unsqueeze(0).to(device), True)
-
-
-
-    print("adv loss: ",loss)
+    for k in range(-8,9):
+        loss = calc_js.adv_loss_image_pdf((tensor_1*k).unsqueeze(0).to(device), img1.unsqueeze(0).to(device))
+        print("adv loss: ",loss, k)
 
     
