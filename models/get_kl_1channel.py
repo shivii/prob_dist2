@@ -106,11 +106,14 @@ class JSD(nn.Module):
         return adversarial_loss
     
     def adv_loss_image_pdf(self, pred_real, pred_fake):
+        eps = 1e-12
         pred_real = F.softmax(pred_real, dim=2) /30
         pred_fake = F.softmax(pred_fake, dim=2) /30
 
         div = self.get_JSDiv(pred_real, pred_fake)
-        return div.sum()
+
+        adversarial_loss = -torch.log(div.mean() + eps) 
+        return adversarial_loss
 
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -146,11 +149,11 @@ if __name__ == '__main__':
     image1 = trans(img1).to(device)
     image2 = trans(img2).to(device)
 
-    calc_js.adv_loss_image_pdf(img1.unsqueeze(0).to(device), img2.unsqueeze(0).to(device))
+    loss = calc_js.adv_loss_image_pdf(img1.unsqueeze(0).to(device), img2.unsqueeze(0).to(device))
     #loss_G = calc_js.adv_loss_gen(img1.unsqueeze(0).to(device), True)
 
 
 
-    #print("adv loss: ",loss_D)
+    print("adv loss: ",loss)
 
     
