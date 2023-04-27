@@ -173,7 +173,7 @@ class CycleGANModel(BaseModel):
         if opt.advloss == 0:
             print("In gaussian adv loss-----------------Dis")
             div_D = self.get_adv.adv_loss_image_pdf(pred_real, pred_fake) 
-            D_ad = torch.exp(-div_D * opt.disc_coeff)
+            D_ad = torch.exp(-div_D.detach() * opt.disc_coeff)
             loss_D = loss_D_real + D_ad
         else:
             loss_D_fake = self.criterionGAN(pred_fake, False)
