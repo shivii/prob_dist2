@@ -172,9 +172,9 @@ class CycleGANModel(BaseModel):
         if opt.advloss == 0:
             #print("In gaussian adv loss-----------------Dis")
             div_real = self.get_adv.JS_loss(pred_real, True) 
-            loss_D_real = div_real.detach()
+            loss_D_real = div_real
             div_fake = self.get_adv.JS_loss(pred_fake, False)
-            loss_D_fake = div_fake.detach()
+            loss_D_fake = div_fake
             loss_D = (loss_D_real + loss_D_fake)
         else:
             loss_D_real = self.criterionGAN(pred_real, True)
@@ -311,11 +311,11 @@ class CycleGANModel(BaseModel):
             "In gaussian adv loss-----------------Gen"
             # GAN loss D_A(G_A(A))
             div_G_A = self.get_adv.JS_loss(self.netD_A(self.fake_B), True) 
-            self.loss_G_A = div_G_A.detach()
+            self.loss_G_A = div_G_A
             #print("generator loss fake_B", self.loss_G_A)
             # GAN loss D_B(G_B(B))
             div_G_B = self.get_adv.JS_loss(self.netD_B(self.fake_A), True) 
-            self.loss_G_B = div_G_B.detach()
+            self.loss_G_B = div_G_B
             #print("generator loss fake_A", self.loss_G_B)
         else:
             # GAN loss D_A(G_A(A))
