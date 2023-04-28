@@ -8,6 +8,7 @@ import torch.nn as nn
 from models.get_kl_divergence import get_divergence
 import models.get_kl_1channel as div
 from math import log
+import models.get_weighted_image as wt_im
 ##############TSNE changes
 
 
@@ -112,6 +113,9 @@ class CycleGANModel(BaseModel):
             # adversarial loss through kl divergence on local neighbourhood
             self.get_adv = div.JSD().to(self.device) 
 
+            # get weighted image with gaussian 
+            self.get_wt = wt_im.WImage().to(self.device) 
+
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -139,6 +143,12 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
+        self.fake_B_wt = self.get_wt.wt_image(self.fake_B)
+        self.rec_A_wt = self.get_wt.wt_image(self.rec_A)
+        self.fake_A_wt = self.get_wt.wt_image(self.fake_A)
+        self.rec_B_wt = self.get_wt.wt_image(self.rec_B)
+        self.real_A_wt = self.get_wt.wt_image(self.real_A)
+        self.real_B_wt = self.get_wt.wt_image(self.real_B)
 
     def neutralise_zeros(self, tensor, dim):
         epsilon = 1e-20
@@ -164,36 +174,34 @@ class CycleGANModel(BaseModel):
         """
         # Real
         pred_real = netD(real)
-        
         # Fake
         pred_fake = netD(fake.detach())
-
-        # Combined loss and calculate gradients
-        if opt.advloss == 0:
-            #print("In gaussian adv loss-----------------Dis")
-            div_real = self.get_adv.JS_loss(pred_real, True) 
-            loss_D_real = div_real
-            div_fake = self.get_adv.JS_loss(pred_fake, False)
-            loss_D_fake = div_fake
-            loss_D = (loss_D_real + loss_D_fake)
-        else:
-            loss_D_real = self.criterionGAN(pred_real, True)
-            loss_D_fake = self.criterionGAN(pred_fake, False)
-            loss_D = (loss_D_real + loss_D_fake) 
+        loss_D_real = self.criterionGAN(pred_real, True)
+        loss_D_fake = self.criterionGAN(pred_fake, False)
+        loss_D = (loss_D_real + loss_D_fake) 
         
-        print("before bckwd", loss_D)
         loss_D.backward()
         return loss_D
 
     def backward_D_A(self, opt):
         """Calculate GAN loss for discriminator D_A"""
-        fake_B = self.fake_B_pool.query(self.fake_B)
-        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt)
+        if opt.advloss == 0:
+            real = self.real_B_wt
+            fake = self.fake_B_wt
+            self.loss_D_A = self.backward_D_basic(self.netD_A, real, fake, opt)
+        else:
+            fake_B = self.fake_B_pool.query(self.fake_B)
+            self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt)
 
     def backward_D_B(self, opt):
         """Calculate GAN loss for discriminator D_B"""
-        fake_A = self.fake_A_pool.query(self.fake_A)
-        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
+        if opt.advloss == 0:
+            real = self.real_A_wt
+            fake = self.fake_A_wt
+            self.loss_D_B = self.backward_D_basic(self.netD_B, real, fake, opt)
+        else:      
+            fake_A = self.fake_A_pool.query(self.fake_A)
+            self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
         
     def initialise_pdf_losses(self, opt):
         pdf_list = opt.which_pdf.split(",")
@@ -228,10 +236,10 @@ class CycleGANModel(BaseModel):
             self.loss_names.append("log_A")
             self.loss_names.append("log_B")
 
-    def get_log_loss(self, real_A, recreated_A, real_B, recreated_B, coeff):
+    def get_log_loss(self, coeff):
         loss = nn.BCEWithLogitsLoss()
-        self.loss_log_A = loss(real_A, recreated_A) * coeff
-        self.loss_log_B = loss(real_B, recreated_B) * coeff
+        self.loss_log_A = loss(self.rec_A_wt, self.real_A_wt) * coeff
+        self.loss_log_B = loss(self.rec_B_wt, self.real_B_wt) * coeff
         sum = self.loss_log_A + self.loss_log_B
         return sum
 
@@ -265,7 +273,7 @@ class CycleGANModel(BaseModel):
             sum = sum + self.loss_hist_pat_A + self.loss_hist_pat_B
         if "6" in pdf_list:
             coeff = 10
-            total_log_loss = self.get_log_loss(self.real_A, self.rec_A, self.real_B, self.rec_B, coeff)
+            total_log_loss = self.get_log_loss(coeff)
             sum = sum + total_log_loss
         
         return sum
@@ -310,20 +318,14 @@ class CycleGANModel(BaseModel):
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Gen"
             # GAN loss D_A(G_A(A))
-            div_G_A = self.get_adv.JS_loss(self.netD_A(self.fake_B), True) 
-            self.loss_G_A = div_G_A
-            #print("generator loss fake_B", self.loss_G_A)
+            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B_wt), True)
             # GAN loss D_B(G_B(B))
-            div_G_B = self.get_adv.JS_loss(self.netD_B(self.fake_A), True) 
-            self.loss_G_B = div_G_B
-            #print("generator loss fake_A", self.loss_G_B)
+            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A_wt), True) 
         else:
             # GAN loss D_A(G_A(A))
             self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
-            #print("generator output fake_B", self.netD_A(self.fake_B).shape)
             # GAN loss D_B(G_B(B))
             self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
-            #print("generator output fake_A", self.netD_A(self.fake_A).shape)     
 
         """print both GAN loss:"""
         #print("GAN loss:", self.loss_G_A, self.loss_G_B)
@@ -340,7 +342,7 @@ class CycleGANModel(BaseModel):
             self.loss_cycle_A = 0
             # Backward cycle loss || G_A(G_B(B)) - B||
             self.loss_cycle_B = 0
-        
+
         """
         Divergence loss:
 
@@ -351,8 +353,9 @@ class CycleGANModel(BaseModel):
         pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
         """
 
-        self.initialise_pdf_losses(opt)
-        total_pdf_divergence = self.compute_pdf_losses(opt)
+        if opt.pdfloss == 1:
+            self.initialise_pdf_losses(opt)
+            total_pdf_divergence = self.compute_pdf_losses(opt)
    
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + total_pdf_divergence
         

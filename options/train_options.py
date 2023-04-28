@@ -39,6 +39,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--kernel', type=int, default=3, help="kernel size for computing neighbours (for 2 hop kernel size 5)")
         parser.add_argument('--cycleloss', type=int, default=1, help="cycle loss is excluded in loss function if passed 0")
         parser.add_argument('--klloss', type=int, default=2, help="kl divergence loss is excluded in loss function if passed 0, klloss = kl if 1, js if 2")
+        parser.add_argument('--pdfloss', type=int, default=1, help="pdf and othert losses if computed")
         parser.add_argument('--advloss', type=int, default=1, help="adverserial loss is excluded in loss function if passed 0")
         #parser.add_argument('--patch_size', type=int, default=8, help="patch size is the size of patch in computing patch pdf of image")
         parser.add_argument('--which_pdf', type=str, default='2,4', help="comma seperated list of losses 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4")

@@ -505,6 +505,7 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     """
     de_image1 = denorm(image1).to(float)
     de_image2 = denorm(image2).to(float)
+    print("denorm image:", de_image1.shape, de_image1.min(), de_image1.max())
 
     # get r,g,b components
     r1, g1, b1 = get_rgb(de_image1)
@@ -533,7 +534,7 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
         prob2_r, prob2_g, prob2_b = calculate_pdf_image_patch(r2, g2, b2, patch)
 
 
-    #print("prob_r shape", prob1_r.shape)
+    print("prob_r shape", prob1_r.shape, prob1_r.min(), prob1_r.max())
     
     #get Divergence
     if klloss == 1:
@@ -593,7 +594,7 @@ if __name__ == '__main__':
     print("img shape",img1.shape, img2.shape)
     """
     Normalise image
-    
+    """
     trans = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
@@ -601,9 +602,8 @@ if __name__ == '__main__':
     image1 = trans(input_image1).to(device)
     image2 = trans(input_image2).to(device)
 
-    pdf = 3
+    pdf = 1
     klloss=2
     div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
 
     print("pdf=1 klloss div: ",pdf, klloss, div.mean()) 
-    """
