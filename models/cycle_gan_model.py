@@ -188,12 +188,12 @@ class CycleGANModel(BaseModel):
     def backward_D_A(self, opt):
         """Calculate GAN loss for discriminator D_A"""
         fake_B = self.fake_B_pool.query(self.fake_B)
-        self.loss_D_A, self.loss_D_A_ad = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt)
+        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt)
 
     def backward_D_B(self, opt):
         """Calculate GAN loss for discriminator D_B"""
         fake_A = self.fake_A_pool.query(self.fake_A)
-        self.loss_D_B, self.loss_D_B_ad = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
+        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
         
     def initialise_pdf_losses(self, opt):
         pdf_list = opt.which_pdf.split(",")
