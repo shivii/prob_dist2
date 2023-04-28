@@ -122,10 +122,10 @@ class JSD(nn.Module):
             label = torch.ones_like(D_real)
         else: 
             label = torch.zeros_like(D_real)
-        D_real = torch.clamp(D_real, min=1e-7, max=1.0).to(device)
-        div_label = torch.clamp(label, min=1e-7, max=1.0).to(device)
+        D_real = torch.clamp(D_real, min=1e-7, max=1.0)
+        div_label = torch.clamp(label, min=1e-7, max=1.0)
         D_avg = (D_real + div_label) / 2.0
-        loss = 0.5 * (torch.mean(torch.log(D_real / D_avg)) + torch.mean(torch.log(D_fake / D_avg)))
+        loss = 0.5 * (torch.mean(torch.log(D_real / D_avg)) + torch.mean(torch.log(div_label / D_avg)))
         return -loss
 
 if __name__ == '__main__':
