@@ -115,6 +115,18 @@ class JSD(nn.Module):
         #adversarial_loss = -torch.log(div.sum() + eps) 
         #return adversarial_loss
         return div.sum() 
+    
+    # Loss function (Jenson-Shannon divergence)
+    def JS_loss(self, D_real, target_is_real):
+        if target_is_real:
+            label = torch.ones_like(D_real)
+        else: 
+            label = torch.zeros_like(D_real)
+        D_real = torch.clamp(D_real, min=1e-7, max=1.0).to(device)
+        div_label = torch.clamp(label, min=1e-7, max=1.0).to(device)
+        D_avg = (D_real + div_label) / 2.0
+        loss = 0.5 * (torch.mean(torch.log(D_real / D_avg)) + torch.mean(torch.log(D_fake / D_avg)))
+        return -loss
 
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -151,8 +163,13 @@ if __name__ == '__main__':
     image1 = trans(img1).to(device)
     image2 = trans(img2).to(device)
 
-    for k in range(-8,9):
-        loss = calc_js.adv_loss_image_pdf((tensor_1*k).unsqueeze(0).to(device), img1.unsqueeze(0).to(device))
-        print("adv loss: ",loss, k)
+
+    # Adversarial ground truths
+    valid = torch.ones_like(img1).to(device)
+    fake = torch.zeros_like(img1).to(device)
+    g_loss = calc_js.JS_loss(img1, valid) 
+    d_loss = calc_js.JS_loss(img1, valid) + calc_js.JS_loss(img1, fake)
+    #loss = calc_js.adv_loss_image_pdf((img1).unsqueeze(0).to(device), img2.unsqueeze(0).to(device))
+    print("adv loss: ",g_loss, d_loss)
 
     

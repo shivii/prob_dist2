@@ -63,7 +63,7 @@ class CycleGANModel(BaseModel):
         BaseModel.__init__(self, opt)
         # specify the training real_labellosses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         ############TSNE changes
-        self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B', 'D_A_ad', 'D_B_ad', 'G_A_ad', 'G_B_ad']
+        self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
         
         
         
@@ -164,25 +164,26 @@ class CycleGANModel(BaseModel):
         """
         # Real
         pred_real = netD(real)
-        pred_real_sft = pred_real
-        loss_D_real = self.criterionGAN(pred_real, True)
+        
         # Fake
         pred_fake = netD(fake.detach())
 
         # Combined loss and calculate gradients
         if opt.advloss == 0:
-            print("In gaussian adv loss-----------------Dis")
-            div_D = self.get_adv.adv_loss_image_pdf(pred_real, pred_fake) 
-            D_ad = -torch.log(div_D.detach() )
-            loss_D = loss_D_real + D_ad
+            #print("In gaussian adv loss-----------------Dis")
+            div_real = self.get_adv.JS_loss(pred_real, True) 
+            loss_D_real = div_real.detach()
+            div_fake = self.get_adv.JS_loss(pred_fake, False)
+            loss_D_fake = div_fake.detach()
+            loss_D = (loss_D_real + loss_D_fake)
         else:
+            loss_D_real = self.criterionGAN(pred_real, True)
             loss_D_fake = self.criterionGAN(pred_fake, False)
             loss_D = (loss_D_real + loss_D_fake) 
         
         print("before bckwd", loss_D)
         loss_D.backward()
-        print("after bckwd", loss_D)
-        return loss_D, D_ad
+        return loss_D
 
     def backward_D_A(self, opt):
         """Calculate GAN loss for discriminator D_A"""
@@ -309,14 +310,12 @@ class CycleGANModel(BaseModel):
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Gen"
             # GAN loss D_A(G_A(A))
-            div_G_A = self.get_adv.adv_loss_image_pdf(self.netD_A(self.fake_B), self.netD_A(self.real_A)) 
-            self.loss_G_A_ad = div_G_A * opt.gen_coeff
-            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)  + self.loss_G_A_ad
+            div_G_A = self.get_adv.JS_loss(self.netD_A(self.fake_B), True) 
+            self.loss_G_A = div_G_A.detach()
             #print("generator loss fake_B", self.loss_G_A)
             # GAN loss D_B(G_B(B))
-            div_G_B = self.get_adv.adv_loss_image_pdf(self.netD_B(self.fake_A), self.netD_B(self.real_B)) 
-            self.loss_G_B_ad = div_G_B 
-            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) + self.loss_G_B_ad
+            div_G_B = self.get_adv.JS_loss(self.netD_B(self.fake_A), True) 
+            self.loss_G_B = div_G_B.detach()
             #print("generator loss fake_A", self.loss_G_B)
         else:
             # GAN loss D_A(G_A(A))
