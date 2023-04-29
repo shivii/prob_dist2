@@ -238,9 +238,11 @@ class CycleGANModel(BaseModel):
 
     def get_log_loss(self, coeff):
         loss = nn.BCEWithLogitsLoss()
-        target = torch.ones_like(self.rec_A)
-        self.loss_log_A = loss(self.netD_A(self.rec_A_wt), target) * coeff
-        self.loss_log_B = loss(self.netD_B(self.rec_B_wt), target) * coeff
+        pred_A = self.netD_A(self.rec_A_wt)
+        pred_B = self.netD_A(self.rec_B_wt)
+        target = torch.ones_like(pred_A)
+        self.loss_log_A = loss(pred_A, target) * coeff
+        self.loss_log_B = loss(pred_B, target) * coeff
         sum = self.loss_log_A + self.loss_log_B
         return sum
 
