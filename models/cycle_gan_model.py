@@ -252,9 +252,8 @@ class CycleGANModel(BaseModel):
             sum = self.loss_log_A + self.loss_log_B
         elif opt.loss_bce == 2:
             loss = nn.BCEWithLogitsLoss()
-            pred_A = self.rec_A_wt
-            pred_B = self.rec_B_wt
-            self.loss_log_A = loss(pred_A, pred_B) * opt.coeff_logloss
+            self.loss_log_A = loss(self.rec_A_wt, self.real_A_wt) * opt.coeff_logloss
+            self.loss_log_B = loss(self.rec_B_wt, self.real_B_wt) * opt.coeff_logloss
             sum = self.loss_log_A + self.loss_log_B
         return sum
 
