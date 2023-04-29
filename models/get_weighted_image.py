@@ -150,6 +150,8 @@ class WImage(nn.Module):
 
         return new_image
     
+    
+    
 if __name__ == '__main__':
     print(torch.cuda.get_device_properties(0))
     torch.set_printoptions(threshold=100000)
@@ -169,5 +171,11 @@ if __name__ == '__main__':
     print("image shape", image1.shape, image2.shape)
 
     wt = WImage()
-    wt_image = wt.wt_image(image1.unsqueeze(0))
-    print("wt_image", wt_image.shape, wt_image.min(), wt_image.max())
+    wt_image1 = wt.wt_image(image1.unsqueeze(0))
+    wt_image2 = wt.wt_image(image2.unsqueeze(0))
+    softmax = nn.Softmax()
+    wt_sft1 = softmax(wt_image1.flatten())
+    wt_sft2 = softmax(wt_image2.flatten())
+
+
+    print("softmax_image", wt_image1.shape, wt_sft1.shape, wt_sft1.min(), wt_sft1.max(), wt_sft1.sum())

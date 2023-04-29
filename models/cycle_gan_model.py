@@ -235,6 +235,11 @@ class CycleGANModel(BaseModel):
             self.loss_log_B = 0
             self.loss_names.append("log_A")
             self.loss_names.append("log_B")
+        if "7" in pdf_list:
+            self.loss_jsd_A = 0
+            self.loss_jsd_B = 0
+            self.loss_names.append("jsd_A")
+            self.loss_names.append("jsd_B")
 
     def get_log_loss(self, coeff):
         loss = nn.BCEWithLogitsLoss()
@@ -246,6 +251,7 @@ class CycleGANModel(BaseModel):
         sum = self.loss_log_A + self.loss_log_B
         return sum
 
+    
     def compute_pdf_losses(self, opt):
         pdf_list = opt.which_pdf.split(",")
         sum = 0
@@ -278,6 +284,11 @@ class CycleGANModel(BaseModel):
             coeff = 10
             total_log_loss = self.get_log_loss(coeff)
             sum = sum + total_log_loss
+        if "7" in pdf_list:
+            coeff = 200
+            self.loss_jsd_A = get_divergence(self.real_A_wt, self.rec_A_wt, pdf=4, klloss=opt.klloss) * coeff
+            self.loss_jsd_B = get_divergence(self.real_B_wt, self.rec_B_wt, pdf=4, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_jsd_A + self.loss_jsd_B
         
         return sum
         

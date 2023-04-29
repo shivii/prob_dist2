@@ -503,15 +503,16 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     """
     Denormalize image
     """
-    de_image1 = denorm(image1).to(float)
-    de_image2 = denorm(image2).to(float)
-    print("denorm image:", de_image1.shape, de_image1.min(), de_image1.max())
+    if pdf != 4:
+        de_image1 = denorm(image1).to(float)
+        de_image2 = denorm(image2).to(float)
+        print("denorm image:", de_image1.shape, de_image1.min(), de_image1.max())
 
-    # get r,g,b components
-    r1, g1, b1 = get_rgb(de_image1)
-    r2, g2, b2 = get_rgb(de_image2)
+        # get r,g,b components
+        r1, g1, b1 = get_rgb(de_image1)
+        r2, g2, b2 = get_rgb(de_image2)
 
-    #print("shape of image received : ", image1.shape)
+    print("shape of image received : ", image1.shape)
     #print("shape of dnorm Image : ", de_image1.shape)
     #print("shape of channel is : ", r1.shape)
 
@@ -591,7 +592,7 @@ if __name__ == '__main__':
     img1 = img1.unsqueeze(0).unsqueeze(0)
     img2 = (r1 - r2) * torch.rand(a,b) + r2
     img2 = img2.unsqueeze(0).unsqueeze(0)
-    print("img shape",img1.shape, img2.shape)
+    #print("img shape",img1.shape, img2.shape)
     """
     Normalise image
     """
@@ -602,7 +603,7 @@ if __name__ == '__main__':
     image1 = trans(input_image1).to(device)
     image2 = trans(input_image2).to(device)
 
-    pdf = 1
+    pdf = 4
     klloss=2
     div = get_divergence(image1.unsqueeze(0),image2.unsqueeze(0), pdf, klloss)
 
