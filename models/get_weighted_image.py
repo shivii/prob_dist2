@@ -117,7 +117,7 @@ class WImage(nn.Module):
         #print("genrating a flattened and repeated tensor")
         return torch.flatten(t).unsqueeze(1).repeat(1,1,n)
     
-    def wt_image(self, image, kernel=3, sigma=0.5):
+    def wt_image(self, image, kernel=3, sigma=0.5, alpha=0.05):
 
         # get r,g,b components
         r, g, b = self.get_rgb(image)
@@ -131,7 +131,6 @@ class WImage(nn.Module):
         w_image = torch.cat([w_image_r, w_image_g, w_image_b], dim=1)
 
         # new_image = x_i + alpha * sum neighb
-        alpha = 0.05
         no_of_neigh = kernel*kernel - 1
         new_image = image + alpha * w_image
 
@@ -171,11 +170,9 @@ if __name__ == '__main__':
     print("image shape", image1.shape, image2.shape)
 
     wt = WImage()
-    wt_image1 = wt.wt_image(image1.unsqueeze(0))
-    wt_image2 = wt.wt_image(image2.unsqueeze(0))
-    softmax = nn.Softmax()
-    wt_sft1 = softmax(wt_image1.flatten())
-    wt_sft2 = softmax(wt_image2.flatten())
+    wt_image1 = wt.wt_image(image1.unsqueeze(0), kernel=5)
+    wt_image2 = wt.wt_image(image2.unsqueeze(0), kernel=5)
 
 
-    print("softmax_image", wt_image1.shape, wt_sft1.shape, wt_sft1.min(), wt_sft1.max(), wt_sft1.sum())
+
+    print("wt_image", wt_image1.shape,wt_image1.min(), wt_image1.max(), wt_image1.sum())

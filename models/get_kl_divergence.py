@@ -60,7 +60,7 @@ def get_pdf(tensor, sigma):
     gaussian_nieghbourhood_sums_repeated = gaussian_nieghbourhood_sums.unsqueeze(2)
     gaussian_distribution = gaussian_space/gaussian_nieghbourhood_sums_repeated
 
-    print(gaussian_distribution.shape)
+    #print(gaussian_distribution.shape)
 
     return gaussian_distribution
 
@@ -94,21 +94,21 @@ def calculate_probability_distribution_histogram(image, sigma, kernel, bins):
     # step2 get histogran of neighbours
     hist = batch_histogram(neigh.long())    
     hist_avg = hist.sum(1)/hist.count_nonzero(dim=1)
-    print("sum", hist_avg.shape)
+    #print("sum", hist_avg.shape)
     repeat_hist_avg = hist_avg.unsqueeze(1).repeat(1,256)
     diff_avg = (hist - repeat_hist_avg)/repeat_hist_avg
     diff_avg[diff_avg==-1] = 0
     diff_avg = diff_avg * repeat_hist_avg
-    print("diff avg:", diff_avg.shape)
+    #print("diff avg:", diff_avg.shape)
     hist_gaussian = torch.exp(-torch.pow(diff_avg, 2)/ (2 * sigma * sigma))
     """remove 1's from hist_gaussian as these represent 0's which are not part of sample space"""
     hist_gaussian[hist_gaussian==1] = 0
-    print("hist_gaussian", hist_gaussian[0])
+    #print("hist_gaussian", hist_gaussian[0])
     gaussian_hist_sums = hist_gaussian.sum(dim=1)
     gaussian_hist_sums_repeated = gaussian_hist_sums.unsqueeze(1)
     gaussian_distribution = hist_gaussian/gaussian_hist_sums_repeated
 
-    print(gaussian_distribution[0])
+    #print(gaussian_distribution[0])
 
 
     # step3 get PDF
@@ -506,13 +506,13 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     if pdf != 4:
         de_image1 = denorm(image1).to(float)
         de_image2 = denorm(image2).to(float)
-        print("denorm image:", de_image1.shape, de_image1.min(), de_image1.max())
+        #print("denorm image:", de_image1.shape, de_image1.min(), de_image1.max())
 
         # get r,g,b components
         r1, g1, b1 = get_rgb(de_image1)
         r2, g2, b2 = get_rgb(de_image2)
 
-    print("shape of image received : ", image1.shape)
+    #print("shape of image received : ", image1.shape)
     #print("shape of dnorm Image : ", de_image1.shape)
     #print("shape of channel is : ", r1.shape)
 
@@ -535,7 +535,7 @@ def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
         prob2_r, prob2_g, prob2_b = calculate_pdf_image_patch(r2, g2, b2, patch)
 
 
-    print("prob_r shape", prob1_r.shape, prob1_r.min(), prob1_r.max())
+    #print("prob_r shape", prob1_r.shape, prob1_r.min(), prob1_r.max())
     
     #get Divergence
     if klloss == 1:

@@ -137,18 +137,18 @@ class CycleGANModel(BaseModel):
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
-    def forward(self):
+    def forward(self, opt):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         self.fake_B = self.netG_A(self.real_A)  # G_A(A)
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
-        self.fake_B_wt = self.get_wt.wt_image(self.fake_B)
-        self.rec_A_wt = self.get_wt.wt_image(self.rec_A)
-        self.fake_A_wt = self.get_wt.wt_image(self.fake_A)
-        self.rec_B_wt = self.get_wt.wt_image(self.rec_B)
-        self.real_A_wt = self.get_wt.wt_image(self.real_A)
-        self.real_B_wt = self.get_wt.wt_image(self.real_B)
+        self.fake_B_wt = self.get_wt.wt_image(self.fake_B, opt.kernel, opt.sigma, opt.alpha)
+        self.rec_A_wt = self.get_wt.wt_image(self.rec_A, opt.kernel, opt.sigma, opt.alpha)
+        self.fake_A_wt = self.get_wt.wt_image(self.fake_A, opt.kernel, opt.sigma, opt.alpha)
+        self.rec_B_wt = self.get_wt.wt_image(self.rec_B, opt.kernel, opt.sigma, opt.alpha)
+        self.real_A_wt = self.get_wt.wt_image(self.real_A, opt.kernel, opt.sigma, opt.alpha)
+        self.real_B_wt = self.get_wt.wt_image(self.real_B, opt.kernel, opt.sigma, opt.alpha)
 
     def neutralise_zeros(self, tensor, dim):
         epsilon = 1e-20
@@ -241,14 +241,21 @@ class CycleGANModel(BaseModel):
             self.loss_names.append("jsd_A")
             self.loss_names.append("jsd_B")
 
-    def get_log_loss(self, coeff):
-        loss = nn.BCEWithLogitsLoss()
-        pred_A = self.netD_A(self.rec_A_wt)
-        pred_B = self.netD_A(self.rec_B_wt)
-        target = torch.ones_like(pred_A)
-        self.loss_log_A = loss(pred_A, target) * coeff
-        self.loss_log_B = loss(pred_B, target) * coeff
-        sum = self.loss_log_A + self.loss_log_B
+    def get_log_loss(self, opt):
+        if opt.loss_bceD == 1:
+            loss = nn.BCEWithLogitsLoss()
+            pred_A = self.netD_A(self.rec_A_wt)
+            pred_B = self.netD_A(self.rec_B_wt)
+            target = torch.ones_like(pred_A)
+            self.loss_log_A = loss(pred_A, target) * opt.coeff_logloss
+            self.loss_log_B = loss(pred_B, target) * opt.coeff_logloss
+            sum = self.loss_log_A + self.loss_log_B
+        elif opt.loss_bce == 2:
+            loss = nn.BCEWithLogitsLoss()
+            pred_A = self.rec_A_wt
+            pred_B = self.rec_B_wt
+            self.loss_log_A = loss(pred_A, pred_B) * opt.coeff_logloss
+            sum = self.loss_log_A + self.loss_log_B
         return sum
 
     
@@ -282,20 +289,14 @@ class CycleGANModel(BaseModel):
             sum = sum + self.loss_hist_pat_A + self.loss_hist_pat_B
         if "6" in pdf_list:
             coeff = 10
-            total_log_loss = self.get_log_loss(coeff)
+            total_log_loss = self.get_log_loss(opt)
             sum = sum + total_log_loss
         if "7" in pdf_list:
-            coeff = 200
-            self.loss_jsd_A = get_divergence(self.real_A_wt, self.rec_A_wt, pdf=4, klloss=opt.klloss) * coeff
-            self.loss_jsd_B = get_divergence(self.real_B_wt, self.rec_B_wt, pdf=4, klloss=opt.klloss) * coeff
+            self.loss_jsd_A = get_divergence(self.real_A_wt, self.rec_A_wt, pdf=4, klloss=opt.klloss) * opt.coeff_jsdloss
+            self.loss_jsd_B = get_divergence(self.real_B_wt, self.rec_B_wt, pdf=4, klloss=opt.klloss) * opt.coeff_jsdloss
             sum = sum + self.loss_jsd_A + self.loss_jsd_B
-        
         return sum
         
-
-
-
-
     def backward_G(self, opt):
         """Calculate GAN loss for the discriminator
 
@@ -380,7 +381,8 @@ class CycleGANModel(BaseModel):
     def optimize_parameters(self, opt):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
-        self.forward()      # compute fake images and reconstruction images.
+        #print("-----------------------------Losses computed:", self.loss_names)
+        self.forward(opt)      # compute fake images and reconstruction images.
 
         #js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
         #js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
