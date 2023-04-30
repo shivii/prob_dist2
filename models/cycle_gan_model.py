@@ -94,20 +94,19 @@ class CycleGANModel(BaseModel):
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc, opt.ngf, opt.netG, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
-        self.kernel = opt.kernel
-        self.sigma = opt.sigma
-        self.alpha = opt.alpha
-        # get weighted image with gaussian         
-        self.get_wt = wt_im.WImage().to(self.device) 
-
-
         if self.isTrain:  # define discriminators
+            self.kernel = opt.kernel
+            self.sigma = opt.sigma
+            self.alpha = opt.alpha
+
+            # get weighted image with gaussian
+            self.get_wt = wt_im.WImage().to(self.device)
+
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf, opt.netD,
                                             opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             self.netD_B = networks.define_D(opt.input_nc, opt.ndf, opt.netD,
                                             opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
 
-        if self.isTrain:
             if opt.lambda_identity > 0.0:  # only works when input and output images have the same number of channels
                 assert(opt.input_nc == opt.output_nc)
             self.fake_A_pool = ImagePool(opt.pool_size)  # create image buffer to store previously generated images
@@ -147,12 +146,13 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
-        self.fake_B_wt = self.get_wt.wt_image(self.fake_B, self.kernel, self.sigma, self.alpha)
-        self.rec_A_wt = self.get_wt.wt_image(self.rec_A, self.kernel, self.sigma, self.alpha)
-        self.fake_A_wt = self.get_wt.wt_image(self.fake_A, self.kernel, self.sigma, self.alpha)
-        self.rec_B_wt = self.get_wt.wt_image(self.rec_B, self.kernel, self.sigma, self.alpha)
-        self.real_A_wt = self.get_wt.wt_image(self.real_A, self.kernel, self.sigma, self.alpha)
-        self.real_B_wt = self.get_wt.wt_image(self.real_B, self.kernel, self.sigma, self.alpha)
+        if self.isTrain:
+            self.fake_B_wt = self.get_wt.wt_image(self.fake_B, self.kernel, self.sigma, self.alpha)
+            self.rec_A_wt = self.get_wt.wt_image(self.rec_A, self.kernel, self.sigma, self.alpha)
+            self.fake_A_wt = self.get_wt.wt_image(self.fake_A, self.kernel, self.sigma, self.alpha)
+            self.rec_B_wt = self.get_wt.wt_image(self.rec_B, self.kernel, self.sigma, self.alpha)
+            self.real_A_wt = self.get_wt.wt_image(self.real_A, self.kernel, self.sigma, self.alpha)
+            self.real_B_wt = self.get_wt.wt_image(self.real_B, self.kernel, self.sigma, self.alpha)
 
 
     def neutralise_zeros(self, tensor, dim):
