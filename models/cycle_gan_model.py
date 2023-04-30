@@ -116,7 +116,9 @@ class CycleGANModel(BaseModel):
             # get weighted image with gaussian 
             self.get_wt = wt_im.WImage().to(self.device) 
 
-            
+            self.kernel = opt.kernel
+            self.sigma = opt.sigma
+            self.alpha = opt.alpha
 
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -145,6 +147,12 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
+        self.fake_B_wt = self.get_wt.wt_image(self.fake_B, self.kernel, self.sigma, self.alpha)
+        self.rec_A_wt = self.get_wt.wt_image(self.rec_A, self.kernel, self.sigma, self.alpha)
+        self.fake_A_wt = self.get_wt.wt_image(self.fake_A, self.kernel, self.sigma, self.alpha)
+        self.rec_B_wt = self.get_wt.wt_image(self.rec_B, self.kernel, self.sigma, self.alpha)
+        self.real_A_wt = self.get_wt.wt_image(self.real_A, self.kernel, self.sigma, self.alpha)
+        self.real_B_wt = self.get_wt.wt_image(self.real_B, self.kernel, self.sigma, self.alpha)
 
 
     def neutralise_zeros(self, tensor, dim):
@@ -380,12 +388,7 @@ class CycleGANModel(BaseModel):
         #print("-----------------------------Losses computed:", self.loss_names)
         self.forward()      # compute fake images and reconstruction images.
 
-        self.fake_B_wt = self.get_wt.wt_image(self.fake_B, self.kernel, self.sigma, self.alpha)
-        self.rec_A_wt = self.get_wt.wt_image(self.rec_A, self.kernel, self.sigma, self.alpha)
-        self.fake_A_wt = self.get_wt.wt_image(self.fake_A, self.kernel, self.sigma, self.alpha)
-        self.rec_B_wt = self.get_wt.wt_image(self.rec_B, self.kernel, self.sigma, self.alpha)
-        self.real_A_wt = self.get_wt.wt_image(self.real_A, self.kernel, self.sigma, self.alpha)
-        self.real_B_wt = self.get_wt.wt_image(self.real_B, self.kernel, self.sigma, self.alpha)
+
 
         #js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
         #js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
