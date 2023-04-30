@@ -139,7 +139,7 @@ class CycleGANModel(BaseModel):
         self.real_B = input['B' if AtoB else 'A'].to(self.device)
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
 
-    def forward(self, opt):
+    def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
         self.fake_B = self.netG_A(self.real_A)  # G_A(A)
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
@@ -383,7 +383,7 @@ class CycleGANModel(BaseModel):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         #print("-----------------------------Losses computed:", self.loss_names)
-        self.forward(opt)      # compute fake images and reconstruction images.
+        self.forward()      # compute fake images and reconstruction images.
 
         #js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
         #js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
