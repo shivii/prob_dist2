@@ -94,6 +94,9 @@ class CycleGANModel(BaseModel):
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc, opt.ngf, opt.netG, opt.norm,
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
+        self.kernel = opt.kernel
+        self.sigma = opt.sigma
+        self.alpha = opt.alpha
         # get weighted image with gaussian         
         self.get_wt = wt_im.WImage().to(self.device) 
 
@@ -116,11 +119,6 @@ class CycleGANModel(BaseModel):
 
             # adversarial loss through kl divergence on local neighbourhood
             self.get_adv = div.JSD().to(self.device) 
-
-
-            self.kernel = opt.kernel
-            self.sigma = opt.sigma
-            self.alpha = opt.alpha
 
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
