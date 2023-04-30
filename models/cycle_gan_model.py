@@ -116,6 +116,8 @@ class CycleGANModel(BaseModel):
             # get weighted image with gaussian 
             self.get_wt = wt_im.WImage().to(self.device) 
 
+            
+
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -143,12 +145,12 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
-        self.fake_B_wt = self.get_wt.wt_image(self.fake_B, opt.kernel, opt.sigma, opt.alpha)
-        self.rec_A_wt = self.get_wt.wt_image(self.rec_A, opt.kernel, opt.sigma, opt.alpha)
-        self.fake_A_wt = self.get_wt.wt_image(self.fake_A, opt.kernel, opt.sigma, opt.alpha)
-        self.rec_B_wt = self.get_wt.wt_image(self.rec_B, opt.kernel, opt.sigma, opt.alpha)
-        self.real_A_wt = self.get_wt.wt_image(self.real_A, opt.kernel, opt.sigma, opt.alpha)
-        self.real_B_wt = self.get_wt.wt_image(self.real_B, opt.kernel, opt.sigma, opt.alpha)
+        self.fake_B_wt = self.get_wt.wt_image(self.fake_B, self.kernel, self.sigma, self.alpha)
+        self.rec_A_wt = self.get_wt.wt_image(self.rec_A, self.kernel, self.sigma, self.alpha)
+        self.fake_A_wt = self.get_wt.wt_image(self.fake_A, self.kernel, self.sigma, self.alpha)
+        self.rec_B_wt = self.get_wt.wt_image(self.rec_B, self.kernel, self.sigma, self.alpha)
+        self.real_A_wt = self.get_wt.wt_image(self.real_A, self.kernel, self.sigma, self.alpha)
+        self.real_B_wt = self.get_wt.wt_image(self.real_B, self.kernel, self.sigma, self.alpha)
 
     def neutralise_zeros(self, tensor, dim):
         epsilon = 1e-20
