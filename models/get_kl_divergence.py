@@ -479,7 +479,6 @@ def calculate_pdf_image_patch(r, g, b, kernel):
 
     return prob_r, prob_g, prob_b
 
-
 def get_divergence(image1, image2, pdf, klloss=2, kernel=3, patch=8, sigma=1):
     """
     Main functions 

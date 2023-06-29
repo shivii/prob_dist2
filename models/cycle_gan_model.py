@@ -333,7 +333,13 @@ class CycleGANModel(BaseModel):
             self.loss_idt_A = 0
             self.loss_idt_B = 0
 
-        """Adversarial loss"""
+        """
+        Adversarial loss
+        advloss = 0: advloss on wt_images
+        advloss = 1: original cyclegan
+        """
+
+
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Gen"
             # GAN loss D_A(G_A(A))
