@@ -154,6 +154,10 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = UnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256':
         net = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif netG == 'resnet_with_att_9blocks':
+        net = ResNetGeneratorWithAttention(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
+    elif netG == 'resnet_with_att_6blocks':
+        net = ResNetGeneratorWithAttention(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids)
@@ -194,6 +198,8 @@ def define_D(input_nc, ndf, netD, n_layers_D=3, norm='batch', init_type='normal'
 
     if netD == 'basic':  # default PatchGAN classifier
         net = NLayerDiscriminator(input_nc, ndf, n_layers=3, norm_layer=norm_layer)
+    elif netD == 'attention':  # default PatchGAN classifier
+        net = DiscriminatorWithAttention(input_nc, ndf, n_layers=3, norm_layer=norm_layer)
     elif netD == 'n_layers':  # more options
         net = NLayerDiscriminator(input_nc, ndf, n_layers_D, norm_layer=norm_layer)
     elif netD == 'pixel':     # classify if each pixel is real or fake
@@ -613,3 +619,333 @@ class PixelDiscriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.net(input)
+    
+
+
+# Define the self-attention layer
+class SelfAttention(nn.Module):
+    """ Self attention Layer"""
+    def __init__(self,in_dim,activation):
+        super(SelfAttention,self).__init__()
+        self.chanel_in = in_dim
+        self.activation = activation
+        
+        self.query_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
+        self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
+        self.value_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim , kernel_size= 1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+        self.softmax  = nn.Softmax(dim=-1) #
+    def forward(self,x):
+        """
+            inputs :
+                x : input feature maps( B X C X W X H)
+            returns :
+                out : self attention value + input feature 
+                attention: B X N X N (N is Width*Height)
+        """
+        m_batchsize,C,width ,height = x.size()
+        proj_query  = self.query_conv(x).view(m_batchsize,-1,width*height).permute(0,2,1) # B X CX(N)
+        proj_key =  self.key_conv(x).view(m_batchsize,-1,width*height) # B X C x (*W*H)
+        energy =  torch.bmm(proj_query,proj_key) # transpose check
+        attention = self.softmax(energy) # BX (N) X (N) 
+        proj_value = self.value_conv(x).view(m_batchsize,-1,width*height) # B X C X N
+
+        out = torch.bmm(proj_value,attention.permute(0,2,1) )
+        out = out.view(m_batchsize,C,width,height)
+        
+        out = self.gamma*out + x
+        return out,attention
+
+# Define the ResNet-based generator with attention
+class ResNetGeneratorWithAttention(nn.Module):
+    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
+
+        """
+            def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
+        Construct a Resnet-based generator
+
+        Parameters:
+            input_nc (int)      -- the number of channels in input images
+            output_nc (int)     -- the number of channels in output images
+            ngf (int)           -- the number of filters in the last conv layer
+            norm_layer          -- normalization layer
+            use_dropout (bool)  -- if use dropout layers
+            n_blocks (int)      -- the number of ResNet blocks
+            padding_type (str)  -- the name of padding layer in conv layers: reflect | replicate | zero
+        """
+    
+        assert(n_blocks >= 0)
+        super(ResNetGeneratorWithAttention, self).__init__()
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+        
+        """
+        As generated -----------------------
+        
+        #super(ResNetGeneratorWithAttention, self).__init__()
+        #self.initial_conv = nn.Conv2d(input_nc, ngf, kernel_size=7, stride=1, padding=3, bias=False)
+        #self.norm_layer = nn.InstanceNorm2d(64)
+        #self.relu = nn.ReLU(inplace=True)
+
+        Build the residual blocks with self-attention 
+        #self.residual_blocks = self.build_residual_blocks(64, n_blocks)
+        
+        Apply self-attention mechanism 
+        #self.attention_layer = SelfAttention(64)
+        
+        Output layer
+        #self.output_conv = 1nn.Conv2d(64, input_nc, kernel_size=7, stride=1, padding=3, bias=False)
+        #self.output_norm = nn.InstanceNorm2d(input_nc)
+        #self.tanh = nn.Tanh()
+
+        def build_residual_blocks(self, channels, num_blocks):
+            blocks = []
+            for _ in range(num_blocks):
+                block = [
+                    nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.InstanceNorm2d(channels),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1, bias=False),
+                    nn.InstanceNorm2d(channels)
+                ]
+                blocks.extend(block)
+            return nn.Sequential(*blocks)
+        
+        def forward(self, x):
+            # Initial convolution and normalization
+            x = self.initial_conv(x)
+            x = self.norm_layer(x)
+            x = self.relu(x)
+            
+            # Residual blocks with attention
+            x = self.residual_blocks(x)
+            x = self.attention_layer(x)
+            
+            # Output convolution
+            x = self.output_conv(x)
+            x = self.output_norm(x)
+            x = self.tanh(x)
+            
+            return x
+
+        ---------------------------------------
+        """
+        self.initial_conv = [nn.ReflectionPad2d(3),
+            nn.Conv2d(input_nc, ngf, kernel_size=7, padding=0, bias=use_bias),
+            norm_layer(ngf),
+            nn.ReLU(True)]
+        self.initial_conv = nn.Sequential(*self.initial_conv)
+        
+        n_downsampling = 2
+        downsampling_blocks = []
+        for i in range(n_downsampling):  # add downsampling layers
+            mult = 2 ** i
+            downsampling_block = [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size=3, stride=2, padding=1, bias=use_bias),
+                      norm_layer(ngf * mult * 2),
+                      nn.ReLU(True)]
+            downsampling_blocks.extend(downsampling_block)
+        self.downsam_block = nn.Sequential(*downsampling_blocks)
+
+        mult = 2 ** n_downsampling
+        resnet_blocks = []
+        for i in range(n_blocks):       # add ResNet blocks
+
+            resnet_block = [ResnetBlockAttn(ngf * mult, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout, use_bias=use_bias)]
+            resnet_blocks.extend(resnet_block)
+        self.r_blocks = nn.Sequential(*resnet_blocks)
+
+
+        # add attention after residual blocks
+
+        self.attn1 = SelfAttention( 256, 'relu')
+
+        upsampling_blocks = []
+        for i in range(n_downsampling):  # add upsampling layers
+            mult = 2 ** (n_downsampling - i)
+            upsampling_block = [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2),
+                                         kernel_size=3, stride=2,
+                                         padding=1, output_padding=1,
+                                         bias=use_bias),
+                      norm_layer(int(ngf * mult / 2)),
+                      nn.ReLU(True)]
+            upsampling_blocks.extend(upsampling_block)
+        self.upsam_block = nn.Sequential(*upsampling_blocks)
+
+        self.out_conv = [nn.ReflectionPad2d(3),
+            nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0),
+            nn.Tanh()]
+        self.out_conv = nn.Sequential(*self.out_conv)
+
+    def forward(self, input):
+        """Standard forward"""
+        # Initial convolution and normalization
+        x = self.initial_conv(input)
+        x = self.self.downsam_block(x)
+        x = self.r_blocks(x)
+        
+        # Residual blocks with attention
+        x, p = self.attn1(x)
+        
+        # Output convolution
+        x = self.upsam_block(x)
+        x = self.out_conv(x)
+        x = self.tanh(x)
+        
+        return x, p       
+
+        
+        
+ 
+class ResnetBlockAttn(nn.Module):
+    """Define a Resnet block"""
+
+    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
+        """Initialize the Resnet block
+
+        A resnet block is a conv block with skip connections
+        We construct a conv block with build_conv_block function,
+        and implement skip connections in <forward> function.
+        Original Resnet paper: https://arxiv.org/pdf/1512.03385.pdf
+        """
+        super(ResnetBlockAttn, self).__init__()
+        self.conv_block = self.build_conv_block(dim, padding_type, norm_layer, use_dropout, use_bias)
+
+    def build_conv_block(self, dim, padding_type, norm_layer, use_dropout, use_bias):
+        """Construct a convolutional block.
+
+        Parameters:
+            dim (int)           -- the number of channels in the conv layer.
+            padding_type (str)  -- the name of padding layer: reflect | replicate | zero
+            norm_layer          -- normalization layer
+            use_dropout (bool)  -- if use dropout layers.
+            use_bias (bool)     -- if the conv layer uses bias or not
+
+        Returns a conv block (with a conv layer, a normalization layer, and a non-linearity layer (ReLU))
+        """
+        conv_block = []
+        p = 0
+        if padding_type == 'reflect':
+            conv_block += [nn.ReflectionPad2d(1)]
+        elif padding_type == 'replicate':
+            conv_block += [nn.ReplicationPad2d(1)]
+        elif padding_type == 'zero':
+            p = 1
+        else:
+            raise NotImplementedError('padding [%s] is not implemented' % padding_type)
+
+        conv_block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias), norm_layer(dim), nn.ReLU(True)]
+        if use_dropout:
+            conv_block += [nn.Dropout(0.5)]
+
+        p = 0
+        if padding_type == 'reflect':
+            conv_block += [nn.ReflectionPad2d(1)]
+        elif padding_type == 'replicate':
+            conv_block += [nn.ReplicationPad2d(1)]
+        elif padding_type == 'zero':
+            p = 1
+        else:
+            raise NotImplementedError('padding [%s] is not implemented' % padding_type)
+        conv_block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias), norm_layer(dim)]
+
+        return nn.Sequential(*conv_block)
+
+    def forward(self, x):
+        """Forward function (with skip connections)"""
+        out = x + self.conv_block(x)  # add skip connections
+        return out
+
+
+
+
+
+
+# Define the CycleGAN discriminator with attention
+class DiscriminatorWithAttention(nn.Module):
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
+        super(DiscriminatorWithAttention, self).__init__()
+
+        if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        kw = 4
+        padw = 1
+        self.initial_conv = nn.Conv2d(input_nc, ndf, kernel_size=4, stride=2, padding=1, bias=False)
+        self.relu = nn.LeakyReLU(0.2, inplace=True)
+        
+        # Build layers with attention
+        self.layers_with_attention = self.build_layers_with_attention(64)
+        
+        nf_mult = 1
+        nf_mult_prev = 1
+        disc_blocks = []
+        for n in range(1, n_layers):  # gradually increase the number of filters
+            nf_mult_prev = nf_mult
+            nf_mult = min(2 ** n, 8)
+            disc_blocks.extend([
+                nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=False),
+                norm_layer(ndf * nf_mult),
+                nn.LeakyReLU(0.2, True)
+            ])
+
+        self.discriminator_b = nn.Sequential(*disc_blocks)
+
+        nf_mult_prev = nf_mult
+        nf_mult = min(2 ** n_layers, 8)
+        out_layer = [
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=False),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ]
+        self.out_layer = nn.Sequential(*out_layer)
+
+        out_conv_layer = [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+        self.out_conv = nn.Sequential(*out_conv_layer)
+
+        
+    def build_layers_with_attention(self, channels):
+        layers = []
+        for _ in range(1):
+            layers.extend([
+                nn.Conv2d(channels, channels, kernel_size=4, stride=2, padding=1, bias=False),
+                nn.InstanceNorm2d(channels),
+                nn.LeakyReLU(0.2, inplace=True),
+                SelfAttention(channels, 'relu')
+            ])
+            channels *= 2
+        return nn.Sequential(*layers)
+        
+    def forward(self, x):
+        x = self.initial_conv(x)
+        x = self.relu(x)
+        x = self.layers_with_attention(x)
+        x = self.discriminator_b(x)
+        x = self.out_layer(x)
+        x = self.out_conv(x)
+        return x
+    
+
+"""
+# Instantiate the ResNet generator with attention
+input_channels = 3  # Number of input channels (e.g., for RGB images)
+generator_A = ResNetGeneratorWithAttention(3, 3)
+discriminator_A = DiscriminatorWithAttention(3)
+
+generator = ResnetGenerator(3,3)
+disc = NLayerDiscriminator(3)
+
+# Print the generator architecture
+print(generator_A)
+print("----------------------------")
+print(generator)
+print("----------------------------")
+print(discriminator_A)
+print("----------------------------")
+print(disc)
+
+"""
