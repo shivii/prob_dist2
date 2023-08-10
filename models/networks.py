@@ -783,7 +783,7 @@ class ResNetGeneratorWithAttention(nn.Module):
         """Standard forward"""
         # Initial convolution and normalization
         x = self.initial_conv(input)
-        x = self.self.downsam_block(x)
+        x = self.downsam_block(x)
         x = self.r_blocks(x)
         
         # Residual blocks with attention
@@ -792,9 +792,8 @@ class ResNetGeneratorWithAttention(nn.Module):
         # Output convolution
         x = self.upsam_block(x)
         x = self.out_conv(x)
-        x = self.tanh(x)
         
-        return x, p       
+        return x      
 
         
         
@@ -923,7 +922,7 @@ class DiscriminatorWithAttention(nn.Module):
     def forward(self, x):
         x = self.initial_conv(x)
         x = self.relu(x)
-        x = self.layers_with_attention(x)
+        x, p = self.layers_with_attention(x)
         x = self.discriminator_b(x)
         x = self.out_layer(x)
         x = self.out_conv(x)
