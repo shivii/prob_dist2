@@ -943,7 +943,7 @@ class UnetSkipConnectionBlockWithAttention(nn.Module):
                                         padding=1)
             down = [downconv]
             up = [uprelu, upconv, nn.Tanh()]
-            attn = [SelfAttention(outer_nc, 'relu')]
+            attn = [SelfAttention(inner_nc * 2, 'relu')]
             model = down + [submodule] + attn + up
         elif innermost:
             upconv = nn.ConvTranspose2d(inner_nc, outer_nc,
@@ -1042,7 +1042,7 @@ class DiscriminatorWithAttention(nn.Module):
         return x
     
 
-""""
+"""
 # Instantiate the ResNet generator with attention
 input_channels = 3  # Number of input channels (e.g., for RGB images)
 generator_A = ResNetGeneratorWithAttention(3, 3)
