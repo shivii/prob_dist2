@@ -154,6 +154,8 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = UnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256':
         net = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    elif netG == 'unetAtt_256':
+        net = UnetGeneratorWithAttention(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'resnet_with_att_9blocks':
         net = ResNetGeneratorWithAttention(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
     elif netG == 'resnet_with_att_6blocks':
@@ -1040,7 +1042,7 @@ class DiscriminatorWithAttention(nn.Module):
         return x
     
 
-
+""""
 # Instantiate the ResNet generator with attention
 input_channels = 3  # Number of input channels (e.g., for RGB images)
 generator_A = ResNetGeneratorWithAttention(3, 3)
@@ -1059,4 +1061,5 @@ print(gen_unet)
 #print(discriminator_A)
 #print("----------------------------")
 #print(disc)
+"""
 
