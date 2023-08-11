@@ -657,7 +657,7 @@ class SelfAttention(nn.Module):
         out = out.view(m_batchsize,C,width,height)
         
         out = self.gamma*out + x
-        return out,attention
+        return out
     
 
 
@@ -791,13 +791,13 @@ class ResNetGeneratorWithAttention(nn.Module):
         x = self.downsam_block(x)
 
         # Residual blocks with attention
-        x, p = self.attn1(x)
+        x = self.attn1(x)
 
         # Residual blocks
         x = self.r_blocks(x)
         
         # Residual blocks with attention
-        x, p = self.attn1(x)
+        x = self.attn1(x)
         
         # Output convolution
         x = self.upsam_block(x)
@@ -936,6 +936,7 @@ class UnetSkipConnectionBlockWithAttention(nn.Module):
         downnorm = norm_layer(inner_nc)
         uprelu = nn.ReLU(True)
         upnorm = norm_layer(outer_nc)
+        attn = SelfAttention(inner_nc * 2, 'relu')
 
         if outermost:
             upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
@@ -943,16 +944,16 @@ class UnetSkipConnectionBlockWithAttention(nn.Module):
                                         padding=1)
             down = [downconv]
             up = [uprelu, upconv, nn.Tanh()]
-            attn = [SelfAttention(inner_nc * 2, 'relu')]
-            model = down + [submodule] + attn + up
+            attn = SelfAttention(inner_nc * 4, 'relu')
+            model = down + [submodule] + [attn] + up
         elif innermost:
             upconv = nn.ConvTranspose2d(inner_nc, outer_nc,
                                         kernel_size=4, stride=2,
                                         padding=1, bias=use_bias)
             down = [downrelu, downconv]
             up = [uprelu, upconv, upnorm]
-            attn = [SelfAttention(outer_nc, 'relu')]
-            model = down + attn + up
+            attn = SelfAttention(inner_nc, 'relu')
+            model = down + [attn] + up
         else:
             upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
                                         kernel_size=4, stride=2,
@@ -1035,7 +1036,7 @@ class DiscriminatorWithAttention(nn.Module):
     def forward(self, x):
         x = self.initial_conv(x)
         x = self.relu(x)
-        x, p = self.layers_with_attention(x)
+        x = self.layers_with_attention(x)
         x = self.discriminator_b(x)
         x = self.out_layer(x)
         x = self.out_conv(x)
@@ -1047,13 +1048,15 @@ class DiscriminatorWithAttention(nn.Module):
 input_channels = 3  # Number of input channels (e.g., for RGB images)
 generator_A = ResNetGeneratorWithAttention(3, 3)
 discriminator_A = DiscriminatorWithAttention(3)
-gen_unet = UnetGeneratorWithAttention(3,3,8)
+gen_unetA = UnetGeneratorWithAttention(3,3,8)
+gen_unet = UnetGenerator(3,3,8)
 
 generator = ResnetGenerator(3,3)
 disc = NLayerDiscriminator(3)
 
 # Print the generator architecture
 print(gen_unet)
+print(gen_unetA)
 #print(generator_A)
 #print("----------------------------")
 #print(generator)
