@@ -635,9 +635,10 @@ class SelfAttention(nn.Module):
         super(SelfAttention,self).__init__()
         self.chanel_in = in_dim
         self.activation = activation
+        self.attn_factor = 2
         
-        self.query_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
-        self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
+        self.query_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//self.attn_factor , kernel_size= 1)
+        self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//self.attn_factor , kernel_size= 1)
         self.value_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim , kernel_size= 1)
         self.gamma = nn.Parameter(torch.zeros(1))
 
@@ -1156,8 +1157,8 @@ gen_a = GeneratorWithAttention(3,3)
 
 
 # Print the generator architecture
-print(gen_a)
-print(generator_RA)
+#print(gen_a)
+#print(generator_RA)
 #print(generator_A)
 #print("----------------------------")
 #print(generator)
