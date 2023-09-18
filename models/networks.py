@@ -116,7 +116,7 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
     return net
 
 
-def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
+def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[], attn_q_div=8, attn_k_div=8):
     """Create a generator
 
     Parameters:
@@ -132,7 +132,7 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
 
     Returns a generator
 
-    Our current implementation provides two types of generators:
+    Our current implementation provides two types of generators:g
         U-Net: [unet_128] (for 128x128 input images) and [unet_256] (for 256x256 input images)
         The original U-Net paper: https://arxiv.org/abs/1505.04597
 
@@ -154,16 +154,20 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
         net = UnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'unet_256':
         net = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    
+    # Attention Generators
     elif netG == 'unetAtt_256':
-        net = UnetGeneratorWithAttention(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+        net = UnetGeneratorWithAttention(input_nc, output_nc, attn_q_div, attn_k_div, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
     elif netG == 'resnetAtt_9blocks':
-        net = ResNetGeneratorWithAttention(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
+        net = ResNetGeneratorWithAttention(input_nc, output_nc, attn_q_div, attn_k_div, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
     elif netG == 'resnetAtt_6blocks':
-        net = ResNetGeneratorWithAttention(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
+        net = ResNetGeneratorWithAttention(input_nc, output_nc, attn_q_div, attn_k_div, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
     elif netG == 'genAtt_9blocks':
-        net = ResNetGeneratorWithAttention(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
+        net = GeneratorWithAttention(input_nc, output_nc, attn_q_div, attn_k_div, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
     elif netG == 'genAtt_6blocks':
-        net = ResNetGeneratorWithAttention(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
+        net = GeneratorWithAttention(input_nc, output_nc, attn_q_div, attn_k_div, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
+    
+    
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % netG)
     return init_net(net, init_type, init_gain, gpu_ids)
@@ -631,14 +635,15 @@ class PixelDiscriminator(nn.Module):
 # Define the self-attention layer
 class SelfAttention(nn.Module):
     """ Self attention Layer"""
-    def __init__(self,in_dim,activation):
+    def __init__(self,in_dim,activation, attn_q_div, attn_k_div):
         super(SelfAttention,self).__init__()
         self.chanel_in = in_dim
         self.activation = activation
-        self.attn_factor = 2
+        self.attn_q_div = attn_q_div
+        self.attn_k_div = attn_k_div
         
-        self.query_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//self.attn_factor , kernel_size= 1)
-        self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//self.attn_factor , kernel_size= 1)
+        self.query_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//self.attn_q_div , kernel_size= 1)
+        self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//self.attn_k_div , kernel_size= 1)
         self.value_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim , kernel_size= 1)
         self.gamma = nn.Parameter(torch.zeros(1))
 
@@ -667,7 +672,7 @@ class SelfAttention(nn.Module):
 
 # Define the ResNet-based generator with attention
 class GeneratorWithAttention(nn.Module):
-    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
+    def __init__(self, input_nc, output_nc, attn_q_div, attn_k_div, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
 
         """
             def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
@@ -710,7 +715,7 @@ class GeneratorWithAttention(nn.Module):
         attn_blocks = []
         for i in range(n_blocks):       # add Attention blocks
 
-            attn_block = [BlockAttn(ngf * mult, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout, use_bias=use_bias)]
+            attn_block = [BlockAttn(ngf * mult, attn_q_div, attn_k_div, padding_type=padding_type, norm_layer=norm_layer, use_dropout=use_dropout, use_bias=use_bias)]
             attn_blocks.extend(attn_block)
         self.a_blocks = nn.Sequential(*attn_blocks)
 
@@ -754,7 +759,7 @@ class GeneratorWithAttention(nn.Module):
 class BlockAttn(nn.Module):
     """Define a Resnet block"""
 
-    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
+    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias, attn_q_div, attn_k_div):
         """Initialize the Resnet block
 
         A resnet block is a conv block with skip connections
@@ -763,9 +768,9 @@ class BlockAttn(nn.Module):
         Original Resnet paper: https://arxiv.org/pdf/1512.03385.pdf
         """
         super(BlockAttn, self).__init__()
-        self.conv_block = self.build_conv_block(dim, padding_type, norm_layer, use_dropout, use_bias)
+        self.conv_block = self.build_conv_block(dim, attn_q_div, attn_k_div, padding_type, norm_layer, use_dropout, use_bias)
 
-    def build_conv_block(self, dim, padding_type, norm_layer, use_dropout, use_bias):
+    def build_conv_block(self, dim, attn_q_div, attn_k_div, padding_type, norm_layer, use_dropout, use_bias):
         """Construct a convolutional block.
 
         Parameters:
@@ -803,7 +808,7 @@ class BlockAttn(nn.Module):
             raise NotImplementedError('padding [%s] is not implemented' % padding_type)
         conv_block += [nn.Conv2d(dim, dim, kernel_size=3, padding=p, bias=use_bias), norm_layer(dim)]
 
-        self. attn = SelfAttention(dim, 'relu')
+        self. attn = SelfAttention(dim, 'relu', attn_q_div, attn_k_div)
 
         return nn.Sequential(*conv_block)
 
@@ -814,7 +819,7 @@ class BlockAttn(nn.Module):
 
 # Define the ResNet-based generator with attention
 class ResNetGeneratorWithAttention(nn.Module):
-    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
+    def __init__(self, input_nc, output_nc, attn_q_div, attn_k_div, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
 
         """
             def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
@@ -864,7 +869,7 @@ class ResNetGeneratorWithAttention(nn.Module):
 
         # add attention after residual blocks
 
-        self.attn1 = SelfAttention( 256, 'relu')
+        self.attn1 = SelfAttention( 256, 'relu', attn_q_div, attn_k_div)
 
         upsampling_blocks = []
         for i in range(n_downsampling):  # add upsampling layers
@@ -971,7 +976,7 @@ class ResnetBlockAttn(nn.Module):
 class UnetGeneratorWithAttention(nn.Module):
     """Create a Unet-based generator"""
 
-    def __init__(self, input_nc, output_nc, num_downs, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False):
+    def __init__(self, input_nc, output_nc, attn_q_div, attn_k_div, num_downs, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False):
         """Construct a Unet generator
         Parameters:
             input_nc (int)  -- the number of channels in input images
@@ -986,15 +991,15 @@ class UnetGeneratorWithAttention(nn.Module):
         """
         super(UnetGeneratorWithAttention, self).__init__()
         # construct unet structure
-        unet_block = UnetSkipConnectionBlockWithAttention(ngf * 8, ngf * 8, input_nc=None, submodule=None, norm_layer=norm_layer, innermost=True)  # add the innermost layer
+        unet_block = UnetSkipConnectionBlockWithAttention(ngf * 8, ngf * 8, attn_q_div, attn_k_div, input_nc=None, submodule=None, norm_layer=norm_layer, innermost=True)  # add the innermost layer
         for i in range(num_downs - 5):          # add intermediate layers with ngf * 8 filters
-            unet_block = UnetSkipConnectionBlockWithAttention(ngf * 8, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
+            unet_block = UnetSkipConnectionBlockWithAttention(ngf * 8, ngf * 8,  attn_q_div, attn_k_div, input_nc=None, submodule=unet_block, norm_layer=norm_layer, use_dropout=use_dropout)
         
         # gradually reduce the number of filters from ngf * 8 to ngf
-        unet_block = UnetSkipConnectionBlockWithAttention(ngf * 4, ngf * 8, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-        unet_block = UnetSkipConnectionBlockWithAttention(ngf * 2, ngf * 4, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-        unet_block = UnetSkipConnectionBlockWithAttention(ngf, ngf * 2, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
-        self.model = UnetSkipConnectionBlockWithAttention(output_nc, ngf, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer)  # add the outermost layer
+        unet_block = UnetSkipConnectionBlockWithAttention(ngf * 4, ngf * 8, attn_q_div, attn_k_div, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetSkipConnectionBlockWithAttention(ngf * 2, ngf * 4, attn_q_div, attn_k_div, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        unet_block = UnetSkipConnectionBlockWithAttention(ngf, ngf * 2, attn_q_div, attn_k_div, input_nc=None, submodule=unet_block, norm_layer=norm_layer)
+        self.model = UnetSkipConnectionBlockWithAttention(output_nc, ngf, attn_q_div, attn_k_div, input_nc=input_nc, submodule=unet_block, outermost=True, norm_layer=norm_layer)  # add the outermost layer
 
     def forward(self, input):
         """Standard forward"""
@@ -1007,14 +1012,14 @@ class UnetSkipConnectionBlockWithAttention(nn.Module):
         |-- downsampling -- |submodule| -- upsampling --|
     """
 
-    def __init__(self, outer_nc, inner_nc, input_nc=None,
+    def __init__(self, outer_nc, inner_nc, attn_q_div, attn_k_div, input_nc=None,
                  submodule=None, outermost=False, innermost=False, norm_layer=nn.BatchNorm2d, use_dropout=False):
         """Construct a Unet submodule with skip connections.
 
         Parameters:
             outer_nc (int) -- the number of filters in the outer conv layer
             inner_nc (int) -- the number of filters in the inner conv layer
-            input_nc (int) -- the number of channels in input images/features
+            input_nc (int) -- the number of channels in input images/featurattn_q_div, attn_k_dives
             submodule (UnetSkipConnectionBlockWithAttention) -- previously defined submodules
             outermost (bool)    -- if this module is the outermost module
             innermost (bool)    -- if this module is the innermost module
@@ -1035,7 +1040,7 @@ class UnetSkipConnectionBlockWithAttention(nn.Module):
         downnorm = norm_layer(inner_nc)
         uprelu = nn.ReLU(True)
         upnorm = norm_layer(outer_nc)
-        attn = SelfAttention(inner_nc * 2, 'relu')
+        #attn = SelfAttention(inner_nc * 2, 'relu', attn_q_div, attn_k_div)
 
         if outermost:
             upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
@@ -1051,7 +1056,7 @@ class UnetSkipConnectionBlockWithAttention(nn.Module):
                                         padding=1, bias=use_bias)
             down = [downrelu, downconv]
             up = [uprelu, upconv, upnorm]
-            attn = SelfAttention(inner_nc, 'relu')
+            attn = SelfAttention(inner_nc, 'relu', attn_q_div, attn_k_div)
             model = down + [attn] + up
         else:
             upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
@@ -1077,7 +1082,7 @@ class UnetSkipConnectionBlockWithAttention(nn.Module):
 
 # Define the CycleGAN discriminator with attention
 class DiscriminatorWithAttention(nn.Module):
-    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
+    def __init__(self, input_nc, attn_q_div, attn_k_div, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
         super(DiscriminatorWithAttention, self).__init__()
 
         if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
@@ -1091,7 +1096,7 @@ class DiscriminatorWithAttention(nn.Module):
         self.relu = nn.LeakyReLU(0.2, inplace=True)
         
         # Build layers with attention
-        self.layers_with_attention = self.build_layers_with_attention(64)
+        self.layers_with_attention = self.build_layers_with_attention(64, attn_q_div, attn_k_div)
         
         nf_mult = 1
         nf_mult_prev = 1
@@ -1120,14 +1125,14 @@ class DiscriminatorWithAttention(nn.Module):
         self.out_conv = nn.Sequential(*out_conv_layer)
 
         
-    def build_layers_with_attention(self, channels):
+    def build_layers_with_attention(self, channels, attn_q_div, attn_k_div):
         layers = []
         for _ in range(1):
             layers.extend([
                 nn.Conv2d(channels, channels, kernel_size=4, stride=2, padding=1, bias=False),
                 nn.InstanceNorm2d(channels),
                 nn.LeakyReLU(0.2, inplace=True),
-                SelfAttention(channels, 'relu')
+                SelfAttention(channels, 'relu', attn_q_div, attn_k_div)
             ])
             channels *= 2
         return nn.Sequential(*layers)
@@ -1145,21 +1150,23 @@ class DiscriminatorWithAttention(nn.Module):
 
 # Instantiate the ResNet generator with attention
 input_channels = 3  # Number of input channels (e.g., for RGB images)
-generator_RA = ResNetGeneratorWithAttention(3, 3)
-discriminator_A = DiscriminatorWithAttention(3)
-gen_unetA = UnetGeneratorWithAttention(3,3,8)
-gen_unet = UnetGenerator(3,3,8)
-
+generator_RA = ResNetGeneratorWithAttention(3, 3, 8, 8)
 gen_resnet = ResnetGenerator(3,3)
+discriminator_A = DiscriminatorWithAttention(3, 8,8)
+gen_unetA = UnetGeneratorWithAttention(3,3,8, 8, 8)
+gen_unet = UnetGenerator(3,3, 8)
+
+
 disc = NLayerDiscriminator(3)
 
-gen_a = GeneratorWithAttention(3,3)
+gen_a = GeneratorWithAttention(3,3, 8, 8)
 
 
 # Print the generator architecture
-#print(gen_a)
-#print(generator_RA)
-#print(generator_A)
+print(gen_resnet)
+print(generator_RA)
+print(gen_a)
+print(gen_unetA)
 #print("----------------------------")
 #print(generator)
 #print("----------------------------")
