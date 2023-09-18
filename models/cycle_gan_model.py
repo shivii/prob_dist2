@@ -338,8 +338,6 @@ class CycleGANModel(BaseModel):
         advloss = 0: advloss on wt_images
         advloss = 1: original cyclegan
         """
-
-
         if opt.advloss == 0:
             "In gaussian adv loss-----------------Gen"
             # GAN loss D_A(G_A(A))
@@ -356,8 +354,11 @@ class CycleGANModel(BaseModel):
         #print("GAN loss:", self.loss_G_A, self.loss_G_B)
 
 
-        """Cycle Loss"""
-        if opt.cycleloss != 0:
+        """Cycle Loss
+        cycleloss = 0: no L1 loss
+        cycleloss = 1: original cyclegan
+        """
+        if opt.cycleloss != 0:   # when cycleloss is 1
             # Forward cycle loss || G_B(G_A(A)) - A||
             self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
             # Backward cycle loss || G_A(G_B(B)) - B||
@@ -391,17 +392,7 @@ class CycleGANModel(BaseModel):
     def optimize_parameters(self, opt):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
-        #print("-----------------------------Losses computed:", self.loss_names)
         self.forward()      # compute fake images and reconstruction images.
-
-
-
-        #js_div_A_B = pdf_divergence(self.real_A, self.fake_B, opt.sigmaGen, opt.kernelGen)
-        #js_div_B_A = pdf_divergence(self.real_B, self.fake_A, opt.sigmaGen, opt.kernelGen)
-
-        #kl_div_A_B = get_divergence(self.fake_B, self.real_A, opt.sigmaGen, opt.kernelGen)
-        #kl_div_B_A = get_divergence(self.fake_A, self.real_B, opt.sigmaGen, opt.kernelGen)
-        #print("js_div_AB, BA:", js_div_A_B, js_div_B_A)
 
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
