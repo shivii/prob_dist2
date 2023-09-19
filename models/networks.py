@@ -630,7 +630,7 @@ class PixelDiscriminator(nn.Module):
         """Standard forward."""
         return self.net(input)
     
-
+"""-----------------------------------------------------------------Attention--------------------------------------------------------------------"""
 
 # Define the self-attention layer
 class SelfAttention(nn.Module):
@@ -1150,7 +1150,7 @@ class DiscriminatorWithAttention(nn.Module):
 
 # Instantiate the ResNet generator with attention
 input_channels = 3  # Number of input channels (e.g., for RGB images)
-generator_RA = ResNetGeneratorWithAttention(3, 3, 8, 8)
+generator_RA = ResNetGeneratorWithAttention(3, 3, 8, 4)
 gen_resnet = ResnetGenerator(3,3)
 discriminator_A = DiscriminatorWithAttention(3, 8,8)
 gen_unetA = UnetGeneratorWithAttention(3,3,8, 8, 8)
@@ -1163,10 +1163,10 @@ gen_a = GeneratorWithAttention(3,3, 8, 8)
 
 
 # Print the generator architecture
-print(gen_resnet)
+#print(gen_resnet)
 print(generator_RA)
-print(gen_a)
-print(gen_unetA)
+#print(gen_a)
+#print(gen_unetA)
 #print("----------------------------")
 #print(generator)
 #print("----------------------------")
