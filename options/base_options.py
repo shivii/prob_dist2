@@ -60,8 +60,8 @@ class BaseOptions():
         parser.add_argument('--load_iter', type=int, default='0', help='which iteration to load? if load_iter > 0, the code will load models by iter_[load_iter]; otherwise, the code will load models by [epoch]')
         parser.add_argument('--verbose', action='store_true', help='if specified, print more debugging information')
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
-        parser.add_argument('--attn_k_div', type=int, default=8, help='key output size for attention block ')
-        parser.add_argument('--attn_q_div', type=int, default=8, help='query output size for attention block ')
+        parser.add_argument('--attn_k', type=int, default=8, help='key output size for attention block ')
+        parser.add_argument('--attn_q', type=int, default=8, help='query output size for attention block ')
 
 
         self.initialized = True
