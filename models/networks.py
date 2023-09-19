@@ -759,7 +759,7 @@ class GeneratorWithAttention(nn.Module):
 class BlockAttn(nn.Module):
     """Define a Resnet block"""
 
-    def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias, attn_q_div, attn_k_div):
+    def __init__(self, dim, attn_q_div, attn_k_div, padding_type, norm_layer, use_dropout, use_bias, ):
         """Initialize the Resnet block
 
         A resnet block is a conv block with skip connections
@@ -1153,18 +1153,18 @@ input_channels = 3  # Number of input channels (e.g., for RGB images)
 generator_RA = ResNetGeneratorWithAttention(3, 3, 8, 4)
 gen_resnet = ResnetGenerator(3,3)
 discriminator_A = DiscriminatorWithAttention(3, 8,8)
-gen_unetA = UnetGeneratorWithAttention(3,3,8, 8, 8)
+gen_unetA = UnetGeneratorWithAttention(3,3,8, 8, 4)
 gen_unet = UnetGenerator(3,3, 8)
 
 
 disc = NLayerDiscriminator(3)
 
-gen_a = GeneratorWithAttention(3,3, 8, 8)
+gen_a = GeneratorWithAttention(3,3, 8, 4)
 
 
 # Print the generator architecture
 #print(gen_resnet)
-print(generator_RA)
+#print(generator_RA)
 #print(gen_a)
 #print(gen_unetA)
 #print("----------------------------")
