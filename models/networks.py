@@ -4,6 +4,11 @@ from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 
+#############
+# Additional imports for SCNN
+#############
+import sparseconvnet as scn
+
 
 ###############################################################################
 # Helper Functions
@@ -613,3 +618,37 @@ class PixelDiscriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.net(input)
+    
+    
+"""-------------------------------------------------Edit done below for SCNN---------------------------------------  """
+
+
+"""
+Create a new class called SSCNResnetGenerator that inherits from the ResnetGenerator class
+"""
+
+class SSCNResnetGenerator(ResnetGenerator):
+    def __init__(self, input_nc, output_nc, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
+        super().__init__(input_nc, output_nc, ngf, norm_layer, use_dropout, n_blocks, padding_type)
+
+        # Replace the dense convolutional layers with SSC layers.
+        self.model[0] = scn.SubmanifoldConvolution(input_nc, 3, 8, 3, False)
+        for i in range(n_blocks):
+            self.model[2 * i + 2] = scn.SubmanifoldConvolution(ngf * 2 ** i, 3, 8, 3, False)
+            self.model[2 * i + 4] = scn.SubmanifoldConvolutionTranspose(ngf * 2 ** (i + 1), 3, 8, 3, False)
+            
+        # Change the forward() method of the SSCNResnetGenerator class to pass the input data through the SSC layers
+        def forward(self, x):
+            """Forward function (with skip connections)"""
+            out = self.model(x)  # pass the input data through the SSC layers
+            return out
+
+
+# Instantiate the ResNet generators
+input_channels = 3  # Number of input channels (e.g., for RGB images)
+
+gen_resnet = SSCNResnetGenerator(3,3)
+
+
+# Print the generator architecture
+print(gen_resnet)
