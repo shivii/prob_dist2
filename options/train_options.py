@@ -10,7 +10,7 @@ class TrainOptions(BaseOptions):
     def initialize(self, parser):
         parser = BaseOptions.initialize(self, parser)
         # visdom and HTML visualization parameters
-        parser.add_argument('--display_freq', type=int, default=400, help='frequency of showing training results on screen')
+        parser.add_argument('--display_freq', type=int, default=50, help='frequency of showing training results on screen')
         parser.add_argument('--display_ncols', type=int, default=4, help='if positive, display all images in a single visdom web panel with certain number of images per row.')
         parser.add_argument('--display_id', type=int, default=1, help='window id of the web display')
         parser.add_argument('--display_server', type=str, default="http://localhost", help='visdom server of the web display')
@@ -35,6 +35,21 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--pool_size', type=int, default=50, help='the size of image buffer that stores previously generated images')
         parser.add_argument('--lr_policy', type=str, default='linear', help='learning rate policy. [linear | step | plateau | cosine]')
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
+        parser.add_argument('--sigma', type=float, default=1, help="standard deviation for uniform distribution")
+        parser.add_argument('--kernel', type=int, default=3, help="kernel size for computing neighbours (for 2 hop kernel size 5)")
+        parser.add_argument('--alpha', type=float, default=0.05, help="kernel size for computing neighbours (for 2 hop kernel size 5)")
+        parser.add_argument('--cycleloss', type=int, default=1, help="cycle loss is excluded in loss function if passed 0")
+        parser.add_argument('--klloss', type=int, default=2, help="kl divergence loss is excluded in loss function if passed 0, klloss = kl if 1, js if 2")
+        parser.add_argument('--pdfloss', type=int, default=0, help="pdf and othert losses if computed")
+        parser.add_argument('--advloss', type=int, default=1, help="adverserial loss is excluded in loss function if passed 0")
+        #parser.add_argument('--patch_size', type=int, default=8, help="patch size is the size of patch in computing patch pdf of image")
+        parser.add_argument('--which_pdf', type=str, default='2,4', help="comma seperated list of losses 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4")
+        parser.add_argument('--gen_coeff', type=float, default=1, help="coeff : 100")
+        parser.add_argument('--disc_coeff', type=float, default=1, help="coeff : 100")
+        parser.add_argument('--coeff_logloss', type=float, default=10, help="coeff : 1")
+        parser.add_argument('--coeff_jsdloss', type=float, default=200, help="coeff : 1")
+        parser.add_argument('--loss_bceD', type=int, default=0, help="if bce on disc values: 1")
+        parser.add_argument('--loss_bce', type=int, default=2, help="if bce on original values : 2")
 
         self.isTrain = True
         return parser

@@ -25,7 +25,8 @@ from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
 import numpy as np
-
+from models.utility import print_with_time as print
+from torchsummary import summary
 ##############TSNE changes
 
 
@@ -41,6 +42,7 @@ if __name__ == '__main__':
     total_iters = 0                # the total number of training iterations
     
     print("------------device", opt.gpu_ids)
+    print("************SUmmary************", summary(model, (3,256,256)))
 
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
@@ -58,7 +60,7 @@ if __name__ == '__main__':
             total_iters += opt.batch_size
             epoch_iter += opt.batch_size
             model.set_input(data)         # unpack data from dataset and apply preprocessing
-            model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
+            model.optimize_parameters(opt)   # calculate loss functions, get gradients, update network weights
             
 
             if total_iters % opt.display_freq == 0:   # display images on visdom and save images to a HTML file

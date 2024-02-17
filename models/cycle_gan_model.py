@@ -3,10 +3,12 @@ import itertools
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
-from . import get_neigh
-import numpy as np
-from models import cycle_tsne
-import time
+from models.utility import print_with_time as print
+import torch.nn as nn
+from models.get_kl_divergence import get_divergence
+import models.get_kl_1channel as div
+from math import log
+import models.get_weighted_image as wt_im
 ##############TSNE changes
 
 
@@ -60,16 +62,11 @@ class CycleGANModel(BaseModel):
             opt (Option class)-- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseModel.__init__(self, opt)
-        # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
+        # specify the training real_labellosses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
         ############TSNE changes
-        self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B', 'tsne_A', 'tsne_B']
+        self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B']
         
-        self.real = torch.tensor([[1],])
-        self.fake = torch.tensor([[0],])
-        # initialize various vectors    
-        self.tsne_embeddingsA = torch.zeros((0, 6), dtype=torch.float32)
-                
-        self.tsne_embeddingsB = torch.zeros((0, 6), dtype=torch.float32)
+        
         
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         visual_names_A = ['real_A', 'fake_B', 'rec_A']
@@ -85,6 +82,10 @@ class CycleGANModel(BaseModel):
         else:  # during test time, only load Gs
             self.model_names = ['G_A', 'G_B']
 
+        """New coefficient term for reducing large loss terms"""
+        #self.alpha_gan = 0.01
+        self.alpha_js = 1/256
+
         # define networks (both Generators and discriminators)
         # The naming is different from those used in the paper.
         # Code (vs. paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
@@ -94,12 +95,18 @@ class CycleGANModel(BaseModel):
                                         not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         if self.isTrain:  # define discriminators
+            self.kernel = opt.kernel
+            self.sigma = opt.sigma
+            self.alpha = opt.alpha
+
+            # get weighted image with gaussian
+            self.get_wt = wt_im.WImage().to(self.device)
+
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf, opt.netD,
                                             opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             self.netD_B = networks.define_D(opt.input_nc, opt.ndf, opt.netD,
                                             opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
 
-        if self.isTrain:
             if opt.lambda_identity > 0.0:  # only works when input and output images have the same number of channels
                 assert(opt.input_nc == opt.output_nc)
             self.fake_A_pool = ImagePool(opt.pool_size)  # create image buffer to store previously generated images
@@ -108,6 +115,10 @@ class CycleGANModel(BaseModel):
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)  # define GAN loss.
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
+
+            # adversarial loss through kl divergence on local neighbourhood
+            self.get_adv = div.JSD().to(self.device) 
+
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -116,7 +127,7 @@ class CycleGANModel(BaseModel):
             
             
 
-    def set_input(self, input):
+    def set_input(self, input): 
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
 
         Parameters:
@@ -135,9 +146,22 @@ class CycleGANModel(BaseModel):
         self.rec_A = self.netG_B(self.fake_B)   # G_B(G_A(A))
         self.fake_A = self.netG_B(self.real_B)  # G_B(B)
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
-        
+        if self.isTrain:
+            self.fake_B_wt = self.get_wt.wt_image(self.fake_B, self.kernel, self.sigma, self.alpha)
+            self.rec_A_wt = self.get_wt.wt_image(self.rec_A, self.kernel, self.sigma, self.alpha)
+            self.fake_A_wt = self.get_wt.wt_image(self.fake_A, self.kernel, self.sigma, self.alpha)
+            self.rec_B_wt = self.get_wt.wt_image(self.rec_B, self.kernel, self.sigma, self.alpha)
+            self.real_A_wt = self.get_wt.wt_image(self.real_A, self.kernel, self.sigma, self.alpha)
+            self.real_B_wt = self.get_wt.wt_image(self.real_B, self.kernel, self.sigma, self.alpha)
 
-    def backward_D_basic(self, netD, real, fake):
+
+    def neutralise_zeros(self, tensor, dim):
+        epsilon = 1e-20
+        tensor = tensor + epsilon
+        tensor = tensor * 1/(1 + dim*dim*epsilon)
+        return tensor
+
+    def backward_D_basic(self, netD, real, fake, opt):
         """Calculate GAN loss for the discriminator
 
         Parameters:
@@ -145,52 +169,159 @@ class CycleGANModel(BaseModel):
             real (tensor array) -- real images
             fake (tensor array) -- images generated by a generator
 
+            Loss_D : log(D(X)) + log(1-D(G(Z))),
+            where, X: real data, Z is noise, G(Z): generated samples
+
+            Loss_D = log(D(X)) + 2.JS(p_r || p_g) - log(4)  
+
         Return the discriminator loss.
         We also call loss_D.backward() to calculate the gradients.
         """
         # Real
         pred_real = netD(real)
-        loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
         pred_fake = netD(fake.detach())
+        loss_D_real = self.criterionGAN(pred_real, True)
         loss_D_fake = self.criterionGAN(pred_fake, False)
-        # Combined loss and calculate gradients
-        loss_D = (loss_D_real + loss_D_fake) * 0.5
+        loss_D = (loss_D_real + loss_D_fake) 
+        
         loss_D.backward()
         return loss_D
 
-    def backward_D_A(self):
+    def backward_D_A(self, opt):
         """Calculate GAN loss for discriminator D_A"""
-        fake_B = self.fake_B_pool.query(self.fake_B)
-        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
+        if opt.advloss == 0:
+            real = self.real_B_wt
+            fake = self.fake_B_wt
+            self.loss_D_A = self.backward_D_basic(self.netD_A, real, fake, opt)
+        else:
+            fake_B = self.fake_B_pool.query(self.fake_B)
+            self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B, opt)
 
-    def backward_D_B(self):
+    def backward_D_B(self, opt):
         """Calculate GAN loss for discriminator D_B"""
-        fake_A = self.fake_A_pool.query(self.fake_A)
-        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
+        if opt.advloss == 0:
+            real = self.real_A_wt
+            fake = self.fake_A_wt
+            self.loss_D_B = self.backward_D_basic(self.netD_B, real, fake, opt)
+        else:      
+            fake_A = self.fake_A_pool.query(self.fake_A)
+            self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A, opt) 
         
-        
-    def compute_tsne(self, tsne_embeddings, labels, a_or_b):
-        tsne_ft= np.array(tsne_embeddings)
-        print("tsne ft:", tsne_ft.shape)
-            
-        tsne_data = cycle_tsne.get_tsne(tsne_ft, labels)
-        tsne_data = cycle_tsne.scale_to_01_range(tsne_data)
-        
-        tx = tsne_data[:,0]
-        ty = tsne_data[:,1]
-        
-        cycle_tsne.plot_representations(tx, ty, labels, a_or_b)
+    def initialise_pdf_losses(self, opt):
+        pdf_list = opt.which_pdf.split(",")
+        if "1" in pdf_list:
+            self.loss_gauss_A = 0
+            self.loss_gauss_B = 0
+            self.loss_names.append("gauss_A")
+            self.loss_names.append("gauss_B")
+        if "2" in pdf_list:
+            self.loss_hist_A = 0
+            self.loss_hist_B = 0
+            self.loss_names.append("hist_A")
+            self.loss_names.append("hist_B")
+        if "3" in pdf_list:
+            self.loss_wt_hist_A = 0
+            self.loss_wt_hist_B = 0
+            self.loss_names.append("wt_hist_A")
+            self.loss_names.append("wt_hist_B")
+        if "4" in pdf_list:
+            self.loss_img_pdf_A = 0
+            self.loss_img_pdf_B = 0
+            self.loss_names.append("img_pdf_A")
+            self.loss_names.append("img_pdf_B")
+        if "5" in pdf_list:
+            self.loss_hist_pat_A = 0
+            self.loss_hist_pat_B = 0
+            self.loss_names.append("hist_pat_A")
+            self.loss_names.append("hist_pat_B")
+        if "6" in pdf_list:
+            self.loss_log_A = 0
+            self.loss_log_B = 0
+            self.loss_names.append("log_A")
+            self.loss_names.append("log_B")
+        if "7" in pdf_list:
+            self.loss_jsd_A = 0
+            self.loss_jsd_B = 0
+            self.loss_names.append("jsd_A")
+            self.loss_names.append("jsd_B")
 
-        distance = cycle_tsne.tsne_loss(tx, ty)
-        return distance
+    def get_log_loss(self, opt):
+        if opt.loss_bceD == 1:
+            loss = nn.BCEWithLogitsLoss()
+            pred_A = self.netD_A(self.rec_A_wt)
+            pred_B = self.netD_A(self.rec_B_wt)
+            target = torch.ones_like(pred_A)
+            self.loss_log_A = loss(pred_A, target) * opt.coeff_logloss
+            self.loss_log_B = loss(pred_B, target) * opt.coeff_logloss
+            sum = self.loss_log_A + self.loss_log_B
+        elif opt.loss_bce == 2:
+            loss = nn.BCEWithLogitsLoss()
+            self.loss_log_A = loss(self.rec_A_wt, self.real_A_wt) * opt.coeff_logloss
+            self.loss_log_B = loss(self.rec_B_wt, self.real_B_wt) * opt.coeff_logloss
+            sum = self.loss_log_A + self.loss_log_B
+        return sum
 
-    def backward_G(self):
+    
+    def compute_pdf_losses(self, opt):
+        pdf_list = opt.which_pdf.split(",")
+        sum = 0
+        if "1" in pdf_list:
+            coeff = 7
+            self.loss_gauss_A = get_divergence(self.real_A, self.rec_A, pdf=1, klloss=opt.klloss) * coeff
+            self.loss_gauss_B = get_divergence(self.real_B, self.rec_B, pdf=1, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_gauss_A + self.loss_gauss_B
+        if "2" in pdf_list:
+            coeff = 1
+            self.loss_hist_A = get_divergence(self.real_A, self.rec_A, pdf=2, klloss=opt.klloss) * coeff
+            self.loss_hist_B = get_divergence(self.real_B, self.rec_B, pdf=2, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_hist_A + self.loss_hist_B
+        if "3" in pdf_list:
+            coeff = 1
+            self.loss_wt_hist_A = get_divergence(self.real_A, self.rec_A, pdf=3, klloss=opt.klloss) * coeff
+            self.loss_wt_hist_B = get_divergence(self.real_B, self.rec_B, pdf=3, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_wt_hist_A + self.loss_wt_hist_B
+        if "4" in pdf_list:
+            coeff = 200
+            self.loss_img_pdf_A = get_divergence(self.real_A, self.rec_A, pdf=4, klloss=opt.klloss) * coeff
+            self.loss_img_pdf_B = get_divergence(self.real_B, self.rec_B, pdf=4, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_img_pdf_A + self.loss_img_pdf_B
+        if "5" in pdf_list:
+            coeff = 2
+            self.loss_hist_pat_A = get_divergence(self.real_A, self.rec_A, pdf=5, klloss=opt.klloss) * coeff
+            self.loss_hist_pat_B = get_divergence(self.real_B, self.rec_B, pdf=5, klloss=opt.klloss) * coeff
+            sum = sum + self.loss_hist_pat_A + self.loss_hist_pat_B
+        if "6" in pdf_list:
+            coeff = 10
+            total_log_loss = self.get_log_loss(opt)
+            sum = sum + total_log_loss
+        if "7" in pdf_list:
+            self.loss_jsd_A = get_divergence(self.real_A_wt, self.rec_A_wt, pdf=4, klloss=opt.klloss) * opt.coeff_jsdloss
+            self.loss_jsd_B = get_divergence(self.real_B_wt, self.rec_B_wt, pdf=4, klloss=opt.klloss) * opt.coeff_jsdloss
+            sum = sum + self.loss_jsd_A + self.loss_jsd_B
+        return sum
+        
+    def backward_G(self, opt):
+        """Calculate GAN loss for the discriminator
+
+        Parameters:
+            opt                 -- options
+            real (tensor array) -- real images
+            fake (tensor array) -- images generated by a generator
+            js_div              -- Jensen shanon divergence for A to B and B to A
+
+            Loss_D = log(D(X)) + 2.JS(p_r || p_g) - log(4)  
+
+        Return the generator loss, cycle loss
+        We also call loss_D.backward() to calculate the gradients.
+        """
+
         """Calculate the loss for generators G_A and G_B"""
         lambda_idt = self.opt.lambda_identity
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
-        # Identity loss
+
+        """ Identity loss """
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed: ||G_A(B) - B||
             self.idt_A = self.netG_A(self.real_B)
@@ -201,59 +332,86 @@ class CycleGANModel(BaseModel):
         else:
             self.loss_idt_A = 0
             self.loss_idt_B = 0
-            
-        ##########TSNE changes
-        # get features and embedding from VGG19---------------------------------------- ###
-        
-        start = time.time()
-        featA, lblA = get_neigh.get_neighb_list(self.real_A, self.real)
-        featB, lblB = get_neigh.get_neighb_list(self.real_B, self.real)
-        featCycleA, lblCycleA = get_neigh.get_neighb_list(self.fake_A, self.fake)
-        featCycleB, lblCycleB = get_neigh.get_neighb_list(self.fake_B, self.fake)
-        end = time.time()
 
-        tsne_embeddingsA = torch.cat((featA.detach().cpu(), featCycleA.detach().cpu()), 0)
-        tsne_embeddingsB = torch.cat((featB.detach().cpu(), featCycleB.detach().cpu()), 0)
-        labels_A = torch.cat((lblA, lblCycleA), 0)
-        labels_B = torch.cat((lblB, lblCycleB), 0)
-        
-        print("time:", (end-start))
-        print("Features shape:", featA.shape, featB.shape, featCycleA.shape, featCycleB.shape)
-        print("embedings shape:", tsne_embeddingsA.shape, tsne_embeddingsB.shape)
-        print("labels shape:", lblA.shape, lblB.shape, lblCycleA.shape, lblCycleB.shape)
+        """
+        Adversarial loss
+        advloss = 0: advloss on wt_images
+        advloss = 1: original cyclegan
+        """
+        if opt.advloss == 0:
+            "In gaussian adv loss-----------------Gen"
+            # GAN loss D_A(G_A(A))
+            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B_wt), True)
+            # GAN loss D_B(G_B(B))
+            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A_wt), True) 
+        else:
+            # GAN loss D_A(G_A(A))
+            self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True) 
+            # GAN loss D_B(G_B(B))
+            self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True) 
 
-        # GAN loss D_A(G_A(A))
-        self.loss_G_A = self.criterionGAN(self.netD_A(self.fake_B), True)
-        # GAN loss D_B(G_B(B))
-        self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True)
-        # Forward cycle loss || G_B(G_A(A)) - A||
-        self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
-        # Backward cycle loss || G_A(G_B(B)) - B||
-        self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
-        
-        # TSNE loss
-        self.loss_tsne_A = self.compute_tsne(tsne_embeddingsA, labels_A, "A")
-        self.loss_tsne_B = self.compute_tsne(tsne_embeddingsB, labels_B, "B")
-        
-        # combined loss and calculate gradients
-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_tsne_A + self.loss_tsne_B
+        """print both GAN loss:"""
+        #print("GAN loss:", self.loss_G_A, self.loss_G_B)
+
+
+        """Cycle Loss
+        cycleloss = 0: no L1 loss
+        cycleloss = 1: original cyclegan
+        """
+        if opt.cycleloss != 0:   # when cycleloss is 1
+            # Forward cycle loss || G_B(G_A(A)) - A||
+            self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
+            # Backward cycle loss || G_A(G_B(B)) - B||
+            self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+        else:
+            # Forward cycle loss || G_B(G_A(A)) - A||
+            self.loss_cycle_A = 0
+            # Backward cycle loss || G_A(G_B(B)) - B||
+            self.loss_cycle_B = 0
+
+        """
+        Divergence loss:
+
+        if kl loss = 0: no divergence => div = 0
+        if kl loss = 1: divergence = KL => div = kl_div
+        if kl loss = 2: divergence = JS => div = js_div
+        get_divergence(image1, image2, pdf, klloss=1, kernel=3, patch=8, sigma=1, agg="mean")
+        pdf = 1:gaussian,2:hist,3:wt_hist,4:imagePDF,5:patch_imagePDF,6:combination of 2,4"
+        """
+        total_pdf_divergence = 0
+        if opt.pdfloss == 1:
+            self.initialise_pdf_losses(opt)
+            total_pdf_divergence = self.compute_pdf_losses(opt)
+   
+        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + total_pdf_divergence
         
         self.loss_G.backward()
-        
-        return tsne_embeddingsA, labels_A, tsne_embeddingsB, labels_B
+    
 
-    def optimize_parameters(self):
+
+    def optimize_parameters(self, opt):
         """Calculate losses, gradients, and update network weights; called in every training iteration"""
         # forward
         self.forward()      # compute fake images and reconstruction images.
+
         # G_A and G_B
         self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs
         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero
-        self.backward_G()             # calculate gradients for G_A and G_B
+        
+        self.backward_G(opt)             # calculate gradients for G_A and G_B
+        #self.backward_G(opt, js_div_A_B, js_div_B_A)             # calculate gradients for G_A and G_B
+        
         self.optimizer_G.step()       # update G_A and G_B's weights
         # D_A and D_B
         self.set_requires_grad([self.netD_A, self.netD_B], True)
         self.optimizer_D.zero_grad()   # set D_A and D_B's gradients to zero
-        self.backward_D_A()      # calculate gradients for D_A
-        self.backward_D_B()      # calculate graidents for D_B
+
+        self.backward_D_A(opt)      # calculate gradients for D_A
+        self.backward_D_B(opt)      # calculate graidents for D_B
+
+        #self.backward_D_A(opt, js_div_A_B)      # calculate gradients for D_A
+        #self.backward_D_B(opt, js_div_B_A)      # calculate graidents for D_B
+
+        #self.backward_D_A(opt, kl_div_A_B)      # calculate gradients for D_A
+        #self.backward_D_B(opt, kl_div_B_A)      # calculate graidents for D_B
         self.optimizer_D.step()  # update D_A and D_B's weights
