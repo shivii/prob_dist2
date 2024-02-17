@@ -4,6 +4,19 @@ from torch.nn import init
 import functools
 from torch.optim import lr_scheduler
 
+#############
+# Additional imports for SCNN
+#############
+import sparseconvnet as scn
+
+
+import torchsparse
+from torchsparse import SparseTensor
+from torchsparse import nn as spnn
+from torchsparse.nn import functional as F
+from torchsparse.utils.collate import sparse_collate_fn
+from torchsparse.utils.quantize import sparse_quantize
+
 
 ###############################################################################
 # Helper Functions
@@ -613,3 +626,72 @@ class PixelDiscriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.net(input)
+    
+    
+"""-------------------------------------------------Edit done below for SCNN---------------------------------------  """
+
+
+"""
+Create a new class called SSCNResnetGenerator that inherits from the ResnetGenerator class
+"""
+
+
+
+
+# Define Residual Block with VSC and SC convolutions and dilation
+class ResidualBlock(nn.Module):
+    def __init__(self, in_planes, out_planes):
+        super(ResidualBlock, self).__init__()
+        self.vsc1 = scn.ValidConvolution(in_planes, out_planes, kernel_size=3)
+        self.sc1 = scn.SubmanifoldConvolution(out_planes, out_planes, kernel_size=3, dilation=2)
+        self.vsc2 = scn.ValidConvolution(out_planes, out_planes, kernel_size=3)
+        self.sc2 = scn.SubmanifoldConvolution(out_planes, out_planes, kernel_size=3, dilation=2)
+        self.bn = scn.BatchNorm2d(out_planes)
+        self.relu = scn.ReLU(inplace=True)
+
+    def forward(self, x):
+        residual = x
+        out = self.vsc1(x)
+        out = self.sc1(out)
+        out = self.bn(self.vsc2(self.relu(out)))
+        out = self.sc2(out)
+        out += residual  # Residual connection
+        out = self.relu(out)
+        return out
+
+
+# Define ResNet-like Generator with SSCs, VSCs, SCs, and submanifold dilation
+class ResNetGeneratorSSC(nn.Module):
+    def __init__(self, in_channels, num_residual_blocks, num_classes):
+        super(ResNetGeneratorSSC, self).__init__()
+        self.conv1 = scn.ValidConvolution(in_channels, 64, kernel_size=3)  # Initial VSC convolution
+        self.relu = scn.ReLU(inplace=True)
+        self.res_blocks = self._make_residual_blocks(64, num_residual_blocks)
+        self.final_conv = scn.ValidConvolution(64, num_classes, kernel_size=3)  # Final VSC convolution
+
+    def _make_residual_blocks(self, in_planes, num_blocks):
+        layers = []
+        for _ in range(num_blocks):
+            layers.append(ResidualBlock(in_planes, in_planes))
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        out = self.relu(self.conv1(x))
+        out = self.res_blocks(out)
+        out = torch.tanh(self.final_conv(out))  # Output with tanh activation
+        return out
+
+
+# Instantiate the ResNet Generator with SSCs, VSCs, SCs, and submanifold dilation
+in_channels = 1  # Input channels for the handwritten text images
+num_residual_blocks = 6  # Number of residual blocks
+num_classes = 1  # Number of output classes or channels
+
+generator_ssc = ResNetGeneratorSSC(in_channels, num_residual_blocks, num_classes)
+
+# Dummy input tensor
+dummy_input = torch.randn(1, in_channels, 64, 64)  # Example input size (batch, channels, height, width)
+output = generator_ssc(dummy_input)
+print("Output Shape:", output.shape)  # Print the output shape for verification
+
+
