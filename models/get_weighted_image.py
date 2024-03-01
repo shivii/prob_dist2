@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import numpy
 #from options.train_options import TrainOptions
 from datetime import datetime
+import torch.profiler
 
 class WImage(nn.Module):
     def __init__(self):
@@ -118,34 +119,42 @@ class WImage(nn.Module):
         return torch.flatten(t).unsqueeze(1).repeat(1,1,n)
     
     def wt_image(self, image, kernel=3, sigma=0.5, alpha=0.05):
-
-        # get r,g,b components
-        r, g, b = self.get_rgb(image)
-
-        w_image_r, w_image_g, w_image_b = self.calculate_pdf_gaussian(r, g, b, kernel, sigma)
-
-        w_image_r = w_image_r.resize(256,256).unsqueeze(0).unsqueeze(0)
-        w_image_g = w_image_g.resize(256,256).unsqueeze(0).unsqueeze(0)
-        w_image_b = w_image_b.resize(256,256).unsqueeze(0).unsqueeze(0)
-
-        w_image = torch.cat([w_image_r, w_image_g, w_image_b], dim=1)
-
-        # new_image = x_i + alpha * sum neighb
-        no_of_neigh = kernel*kernel - 1
-        new_image = image + alpha * w_image
-
-        """
-        # scale the new image [-1,1]
-        # calculating min and max
-        min : -1 + 8 * alpha (e^ ((2 * 2)/2*sigma*sigma ))
-        max = 1 +   8 * alpha (e^ ((0)/2*sigma*sigma )) = 1 +   8 * alpha
-        new_image = (new_image * 2) -1
-        """
-        min = -1 + (no_of_neigh * alpha * (math.exp(-4/ (2*sigma*sigma))))
-        max = 1.0 + no_of_neigh * alpha
-
-        new_image = (new_image - min) / (max-min)
-        new_image = new_image * 2 - 1 
+        with torch.profiler.profile(
+            activities=[torch.profiler.ProfilerActivity.CPU],  # Profile CPU activity
+            schedule=torch.profiler.schedule(wait=2, warmup=2, active=5),  # Profiling schedule
+            with_stack=True  # Include stack trace for breakdown
+        ) as prof:
+            # get r,g,b components
+            r, g, b = self.get_rgb(image)
+    
+            w_image_r, w_image_g, w_image_b = self.calculate_pdf_gaussian(r, g, b, kernel, sigma)
+    
+            w_image_r = w_image_r.resize(256,256).unsqueeze(0).unsqueeze(0)
+            w_image_g = w_image_g.resize(256,256).unsqueeze(0).unsqueeze(0)
+            w_image_b = w_image_b.resize(256,256).unsqueeze(0).unsqueeze(0)
+    
+            w_image = torch.cat([w_image_r, w_image_g, w_image_b], dim=1)
+    
+            # new_image = x_i + alpha * sum neighb
+            no_of_neigh = kernel*kernel - 1
+            new_image = image + alpha * w_image
+    
+            """
+            # scale the new image [-1,1]
+            # calculating min and max
+            min : -1 + 8 * alpha (e^ ((2 * 2)/2*sigma*sigma ))
+            max = 1 +   8 * alpha (e^ ((0)/2*sigma*sigma )) = 1 +   8 * alpha
+            new_image = (new_image * 2) -1
+            """
+            min = -1 + (no_of_neigh * alpha * (math.exp(-4/ (2*sigma*sigma))))
+            max = 1.0 + no_of_neigh * alpha
+    
+            new_image = (new_image - min) / (max-min)
+            new_image = new_image * 2 - 1 
+            
+            # Access profiling results after execution
+            print(prof.key_averages().table(sort_by="self_cpu_time_total"))
+            print(prof.total_average())
 
         return new_image
     
